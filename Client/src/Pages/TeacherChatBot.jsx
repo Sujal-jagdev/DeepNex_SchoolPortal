@@ -103,7 +103,7 @@ function TeacherChatBot() {
 
     const loadChatHistory = async () => {
       try {
-        const res = await axios.get("http://localhost:3001/teacher-history");
+        const res = await axios.get("https://student-webmind-2-server.onrender.com/teacher-history");
         if (res.data.history && res.data.history.length > 0) {
           setChatHistory(res.data.history);
         }
@@ -140,7 +140,7 @@ function TeacherChatBot() {
     setMessage("");
 
     try {
-      const res = await axios.post("http://localhost:3001/teacher-chat", {
+      const res = await axios.post("https://student-webmind-2-server.onrender.com/teacher-chat", {
         message: message,
       });
 
