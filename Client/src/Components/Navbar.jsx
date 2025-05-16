@@ -36,6 +36,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role: userRole } = useContext(MyContext);
+  const [isTeacherApproved, setIsTeacherApproved] = useState(false);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -86,6 +87,7 @@ const Navbar = () => {
             if (approvalData.status === 'approved') {
               // Teacher is approved, set role and data
               setRole('teacher');
+              isTeacherApproved(true)
               setProfileImg(teacherData?.avatar_url || null);
               setUnreadNotifications(teacherData?.unread_notifications || 0);
             } else if (approvalData.status === 'rejected') {
@@ -342,7 +344,7 @@ const Navbar = () => {
               }
 
               {
-                role == "teacher" ? <NavLink
+                role == "teacher" && isTeacherApproved ? <NavLink
                   to="/teacherchat"
                   icon={<FiMessageCircle />}
                   text="TeacherChat"
@@ -621,7 +623,7 @@ const Navbar = () => {
                   />
                 )}
 
-                {user && role === "teacher" && (
+                {user && role === "teacher" && isTeacherApproved && (
                   <MobileNavLink
                     to="/teacherchat"
                     icon={<FiMessageCircle />}
