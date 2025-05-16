@@ -36,6 +36,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role: userRole } = useContext(MyContext);
+  const [isApproved, setIsApproved] = useState(false);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -58,34 +59,49 @@ const Navbar = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
 
-        if (session?.user) {
-          setUser(session.user);
+        let userData = null;
+        let role = null;
+        let isApproved = false;
 
-          // Check each possible user table to find the user's role
-          const tables = ['admin', 'teacher', 'hod', 'student'];
-          let userData = null;
+        // 1. First check all regular tables
+        const tables = ['admin', 'teacher', 'hod', 'student'];
+        for (const table of tables) {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
 
-          for (const table of tables) {
-            const { data, error } = await supabase
-              .from(table)
-              .select("*, avatar_url")
-              .eq("id", session.user.id)
-              .single();
-
-            if (data && !error) {
-              userData = { ...data, role: table };
-              break;
-            }
+          if (data) {
+            role = table;
+            isApproved = table === 'teacher' ? data.status === 'active' : true;
+            userData = data;
+            break;
           }
-
-          setRole(userData?.role || null);
-          setProfileImg(userData?.avatar_url || null);
-          setUnreadNotifications(userData?.unread_notifications || 0);
         }
+
+        // 2. If not found, check teacher_approvals for pending teachers
+        if (!role) {
+          const { data: approvalData } = await supabase
+            .from('teacher_approvals')
+            .select('*')
+            .eq('teacher_email', session.user.email)
+            .single();
+
+          if (approvalData) {
+            role = 'teacher';
+            isApproved = approvalData.status === 'approved';
+          }
+        }
+
+        setUser(session.user);
+        setRole(role);
+        setIsApproved(isApproved);
+        setProfileImg(userData?.avatar_url || null);
+
       } catch (error) {
         console.error("Error fetching user data:", error);
       }
@@ -139,10 +155,10 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const isAdmin = role === "Admin";
-  const isHOD = role === "HOD";
-  const isTeacher = role === "Teacher";
-  const isStudent = role === "Student";
+  const isAdmin = role === "admin";
+  const isHOD = role === "hod";
+  const isTeacher = role === "teacher"; // Now includes both approved and unapproved
+  const isStudent = role === "student";
 
   // Role-specific dropdown items
   const getRoleDropdownItems = () => {
@@ -187,7 +203,7 @@ const Navbar = () => {
     }
 
     if (isTeacher) {
-      return [
+      return isApproved ? [
         {
           to: "/teacher/dashboard",
           icon: <FiActivity className="text-indigo-500" />,
@@ -206,6 +222,13 @@ const Navbar = () => {
           text: "Attendance",
           description: "Take student attendance",
         },
+      ] : [
+        {
+          to: "/login",
+          icon: <FiClock className="text-yellow-500" />,
+          text: "Pending Approval",
+          description: "Waiting for admin/HOD approval",
+        }
       ];
     }
 
@@ -453,26 +476,45 @@ const Navbar = () => {
 
                           {/* Common Links */}
                           {
-                            role == "student" ? <DropdownLink
-                              to={`/student-profile`}
-                              icon={<FiUser className="text-purple-500" />}
-                              text="My Profile"
-                              description="View and edit your profile"
-                              onClick={() => setIsProfileOpen(false)}
-                            /> : role == "teacher" ? <DropdownLink
-                              to={`/teacher-profile`}
-                              icon={<FiUser className="text-purple-500" />}
-                              text="My Profile"
-                              description="View and edit your profile"
-                              onClick={() => setIsProfileOpen(false)}
-                            /> : role == "hod" ? <DropdownLink
-                              to={`/hod-profile`}
-                              icon={<FiUser className="text-purple-500" />}
-                              text="My Profile"
-                              description="View and edit your profile"
-                              onClick={() => setIsProfileOpen(false)}
-                            /> : role == "admin" ? "" : null
+                            role === "student" ? (
+                              <DropdownLink
+                                to="/student-profile"
+                                icon={<FiUser className="text-purple-500" />}
+                                text="My Profile"
+                                description="View and edit your profile"
+                                onClick={() => setIsProfileOpen(false)}
+                              />
+                            ) : role === "teacher" ? (
+                              isApproved ? (
+                                <DropdownLink
+                                  to="/teacher-profile"
+                                  icon={<FiUser className="text-purple-500" />}
+                                  text="My Profile"
+                                  description="View and edit your profile"
+                                  onClick={() => setIsProfileOpen(false)}
+                                />
+                              ) : (
+                                <DropdownLink
+                                  to="/login"
+                                  icon={<FiClock className="text-yellow-500" />}
+                                  text="Pending Approval"
+                                  description="Waiting for admin approval"
+                                  onClick={() => setIsProfileOpen(false)}
+                                />
+                              )
+                            ) : role === "hod" ? (
+                              <DropdownLink
+                                to="/hod-profile"
+                                icon={<FiUser className="text-purple-500" />}
+                                text="My Profile"
+                                description="View and edit your profile"
+                                onClick={() => setIsProfileOpen(false)}
+                              />
+                            ) : role === "admin" ? (
+                              ""
+                            ) : null
                           }
+
 
                           {
                             role == "student" ? "" : <DropdownLink
