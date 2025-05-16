@@ -161,6 +161,16 @@ const ProfileCompletion = () => {
           profileData.status = "pending";
           profileData.approved_by = null;
           profileData.approved_at = null;
+
+          // Add teacher approval record
+          await addTeacherApproval({
+            teacher_id: user.id,
+            teacher_name: formData.fullName,
+            subject: formData.subject_expertise,
+            status: "pending",
+            requested_at: new Date().toISOString(),
+            teacher_email: user.email
+          });
           break;
 
         case "HOD":
@@ -220,6 +230,20 @@ const ProfileCompletion = () => {
       setLoading(false);
     }
   };
+
+  const addTeacherApproval = async (approvalData) => {
+  try {
+    const { error } = await supabase
+      .from("teacher_approvals")
+      .insert([approvalData]);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error adding teacher approval:", error);
+    throw error;
+  }
+};
 
   const roleCards = [
     {
