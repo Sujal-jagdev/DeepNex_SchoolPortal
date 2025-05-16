@@ -57,16 +57,60 @@ const Navbar = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-        if (session?.user) {
-          setUser(session.user);
+      console.log(session.user.email);
+      
+      if (session?.user) {
+        setUser(session.user);
 
-          // Check each possible user table to find the user's role
-          const tables = ['admin', 'teacher', 'hod', 'student'];
+        // First check if this is a teacher
+        const { data: teacherData, error: teacherError } = await supabase
+          .from('teacher')
+          .select("*, avatar_url")
+          .eq("id", session.user.id)
+          .single();
+
+        if (teacherData && !teacherError) {
+          // If teacher found, check approval status
+          const { data: approvalData, error: approvalError } = await supabase
+            .from('teacher_approvals')
+            .select("status")
+            .eq("teacher_email", session.user.email)
+            .single();
+
+          if (approvalData) {
+            if (approvalData.status === 'approved') {
+              // Teacher is approved, set role and data
+              setRole('teacher');
+              setProfileImg(teacherData?.avatar_url || null);
+              setUnreadNotifications(teacherData?.unread_notifications || 0);
+            } else if (approvalData.status === 'rejected') {
+              // Teacher is rejected, don't set role (will be treated as unauthorized)
+              console.log('Teacher account rejected');
+              await supabase.auth.signOut();
+              navigate('/login?message=Your teacher account has been rejected');
+              return;
+            } else {
+              // Status is pending
+              console.log('Teacher account pending approval');
+              await supabase.auth.signOut();
+              navigate('/login?message=Your teacher account is pending approval');
+              return;
+            }
+          } else {
+            // No approval record found (treat as pending)
+            console.log('No approval record found for teacher');
+            await supabase.auth.signOut();
+            navigate('/login?message=Your teacher account is pending approval');
+            return;
+          }
+        } else {
+          // Not a teacher, check other roles
+          const tables = ['admin', 'hod', 'student'];
           let userData = null;
 
           for (const table of tables) {
@@ -86,10 +130,11 @@ const Navbar = () => {
           setProfileImg(userData?.avatar_url || null);
           setUnreadNotifications(userData?.unread_notifications || 0);
         }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
     fetchUserData();
 
