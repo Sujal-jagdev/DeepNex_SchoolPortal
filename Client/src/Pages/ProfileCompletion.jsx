@@ -201,27 +201,40 @@ const ProfileCompletion = () => {
 
       if (error) throw error;
 
-      setMessage({ text: "Profile completed successfully!", type: "success" });
+      // For teachers, log out and redirect to login
+      if (formData.role === "Teacher") {
+        setMessage({
+          text: "Profile submitted for approval! You'll be logged out shortly.",
+          type: "success"
+        });
 
-      // Redirect based on role after a short delay
-      setTimeout(() => {
-        switch (formData.role) {
-          case "Student":
-            navigate("/student-profile");
-            break;
-          case "Teacher":
-            navigate("/teacher-profile");
-            break;
-          case "HOD":
-            navigate("/dashboard");
-            break;
-          case "Admin":
-            navigate("/dashboard");
-            break;
-          default:
-            navigate("/");
-        }
-      }, 1500);
+        // Log out and redirect after 2 seconds
+        setTimeout(async () => {
+          await supabase.auth.signOut();
+          navigate("/login", {
+            state: {
+              message: "Your account is pending approval. Please wait for admin approval."
+            }
+          });
+        }, 2000);
+      } else {
+        setMessage({ text: "Profile completed successfully!", type: "success" });
+
+        // Redirect other roles after delay
+        setTimeout(() => {
+          switch (formData.role) {
+            case "Student":
+              navigate("/student-profile");
+              break;
+            case "HOD":
+            case "Admin":
+              navigate("/dashboard");
+              break;
+            default:
+              navigate("/");
+          }
+        }, 1500);
+      }
 
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -232,18 +245,18 @@ const ProfileCompletion = () => {
   };
 
   const addTeacherApproval = async (approvalData) => {
-  try {
-    const { error } = await supabase
-      .from("teacher_approvals")
-      .insert([approvalData]);
+    try {
+      const { error } = await supabase
+        .from("teacher_approvals")
+        .insert([approvalData]);
 
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error("Error adding teacher approval:", error);
-    throw error;
-  }
-};
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Error adding teacher approval:", error);
+      throw error;
+    }
+  };
 
   const roleCards = [
     {
