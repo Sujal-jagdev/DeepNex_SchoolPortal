@@ -87,7 +87,7 @@ const Navbar = () => {
             if (approvalData.status === 'approved') {
               // Teacher is approved, set role and data
               setRole('teacher');
-              isTeacherApproved(true)
+              setIsTeacherApproved(true)
               setProfileImg(teacherData?.avatar_url || null);
               setUnreadNotifications(teacherData?.unread_notifications || 0);
             } else if (approvalData.status === 'rejected') {
