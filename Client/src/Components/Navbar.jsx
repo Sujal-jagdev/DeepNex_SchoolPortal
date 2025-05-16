@@ -342,7 +342,7 @@ const Navbar = () => {
               }
 
               {
-                role == "Teacher" ? <NavLink
+                role == "teacher" ? <NavLink
                   to="/teacherchat"
                   icon={<FiMessageCircle />}
                   text="TeacherChat"
@@ -621,7 +621,7 @@ const Navbar = () => {
                   />
                 )}
 
-                {user && role === "Teacher" && (
+                {user && role === "teacher" && (
                   <MobileNavLink
                     to="/teacherchat"
                     icon={<FiMessageCircle />}
