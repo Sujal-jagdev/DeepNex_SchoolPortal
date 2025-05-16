@@ -36,6 +36,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role: userRole } = useContext(MyContext);
+  const [isApproved, setIsApproved] = useState(false);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -56,6 +57,7 @@ const Navbar = () => {
   );
 
   useEffect(() => {
+    // In the Navbar component, update the fetchUserData function
     const fetchUserData = async () => {
       try {
         const {
@@ -68,6 +70,8 @@ const Navbar = () => {
           // Check each possible user table to find the user's role
           const tables = ['admin', 'teacher', 'hod', 'student'];
           let userData = null;
+          let userRole = null;
+          let isApproved = false;
 
           for (const table of tables) {
             const { data, error } = await supabase
@@ -78,13 +82,32 @@ const Navbar = () => {
 
             if (data && !error) {
               userData = { ...data, role: table };
+              userRole = table;
+
+              // Special check for teachers
+              if (table === 'teacher') {
+                // Check if teacher is approved
+                const { data: approvalData } = await supabase
+                  .from('teacher_approvals')
+                  .select('status')
+                  .eq('teacher_email', session.user.email)
+                  .single();
+
+                isApproved = approvalData?.status === 'approved';
+              } else {
+                // For non-teachers, consider them approved
+                isApproved = true;
+              }
               break;
             }
           }
 
-          setRole(userData?.role || null);
+          setRole(userRole);
           setProfileImg(userData?.avatar_url || null);
           setUnreadNotifications(userData?.unread_notifications || 0);
+
+          // Store approval status in state or context
+          setIsApproved(isApproved);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -139,10 +162,10 @@ const Navbar = () => {
     navigate("/login");
   };
 
-  const isAdmin = role === "Admin";
-  const isHOD = role === "HOD";
-  const isTeacher = role === "Teacher";
-  const isStudent = role === "Student";
+  const isAdmin = role === "admin";
+  const isHOD = role === "hod";
+  const isTeacher = role === "teacher" && isApproved; // Only approved teachers
+  const isStudent = role === "student";
 
   // Role-specific dropdown items
   const getRoleDropdownItems = () => {
@@ -187,26 +210,37 @@ const Navbar = () => {
     }
 
     if (isTeacher) {
-      return [
-        {
-          to: "/teacher/dashboard",
-          icon: <FiActivity className="text-indigo-500" />,
-          text: "Teacher Dashboard",
-          description: "Your teaching overview",
-        },
-        {
-          to: "/teacher/classes",
-          icon: <FiBookOpen className="text-green-500" />,
-          text: "My Classes",
-          description: "Manage your classes",
-        },
-        {
-          to: "/teacher/attendance",
-          icon: <FiClipboard className="text-orange-500" />,
-          text: "Attendance",
-          description: "Take student attendance",
-        },
-      ];
+      if (isApproved) {
+        return [
+          {
+            to: "/teacher/dashboard",
+            icon: <FiActivity className="text-indigo-500" />,
+            text: "Teacher Dashboard",
+            description: "Your teaching overview",
+          },
+          {
+            to: "/teacher/classes",
+            icon: <FiBookOpen className="text-green-500" />,
+            text: "My Classes",
+            description: "Manage your classes",
+          },
+          {
+            to: "/teacher/attendance",
+            icon: <FiClipboard className="text-orange-500" />,
+            text: "Attendance",
+            description: "Take student attendance",
+          },
+        ];
+      } else {
+        return [
+          {
+            to: "/pending-approval",
+            icon: <FiClock className="text-yellow-500" />,
+            text: "Pending Approval",
+            description: "Waiting for admin/HOD approval",
+          }
+        ];
+      }
     }
 
     return [];
@@ -459,19 +493,26 @@ const Navbar = () => {
                               text="My Profile"
                               description="View and edit your profile"
                               onClick={() => setIsProfileOpen(false)}
-                            /> : role == "teacher" ? <DropdownLink
-                              to={`/teacher-profile`}
-                              icon={<FiUser className="text-purple-500" />}
-                              text="My Profile"
-                              description="View and edit your profile"
-                              onClick={() => setIsProfileOpen(false)}
-                            /> : role == "hod" ? <DropdownLink
-                              to={`/hod-profile`}
-                              icon={<FiUser className="text-purple-500" />}
-                              text="My Profile"
-                              description="View and edit your profile"
-                              onClick={() => setIsProfileOpen(false)}
-                            /> : role == "admin" ? "" : null
+                            /> : role === "teacher" && !isApproved ? <DropdownLink
+                              to="/login"
+                              icon={<FiClock className="text-yellow-500" />}
+                              text="Pending Approval"
+                              description="Waiting for admin/HOD approval"
+                              onClick={() => setIsProfileOpen(false)} />
+                              : role === "teacher" ?
+                                <DropdownLink
+                                  to="/teacher-profile"
+                                  icon={<FiUser className="text-purple-500" />}
+                                  text="My Profile"
+                                  description="View and edit your profile"
+                                  onClick={() => setIsProfileOpen(false)} /> :
+                                role == "hod" ? <DropdownLink
+                                  to={`/hod-profile`}
+                                  icon={<FiUser className="text-purple-500" />}
+                                  text="My Profile"
+                                  description="View and edit your profile"
+                                  onClick={() => setIsProfileOpen(false)}
+                                /> : role == "admin" ? "" : null
                           }
 
                           {
