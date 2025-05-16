@@ -27,7 +27,6 @@ const ProfileCompletion = () => {
     bio: ""
   });
   const [pin, setPin] = useState("");
-  const [showPinInput, setShowPinInput] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
@@ -101,11 +100,6 @@ const ProfileCompletion = () => {
     fetchUser();
   }, [navigate]);
 
-  useEffect(() => {
-    // Show PIN input for Teacher role when HOD or Admin is viewing
-    setShowPinInput(formData.role === "Teacher");
-  }, [formData.role]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -125,6 +119,7 @@ const ProfileCompletion = () => {
 
     try {
       // Prepare the data to be inserted
+
       if (formData.role === "HOD" || formData.role === "Admin") {
         const expectedPin = formData.role === "HOD" ? "98765432" : "18324967";
         if (pin !== expectedPin) {
@@ -196,43 +191,7 @@ const ProfileCompletion = () => {
 
       if (error) throw error;
 
-      // For Teacher role, also insert into the teacher_approvals table if PIN is provided and correct
-      if (formData.role === "Teacher" && pin) {
-        // Check PIN for teacher approvals (this PIN would be known by HODs/Admins)
-        const approvalPin = "123456"; // You can set this to whatever you want
-
-        if (pin === approvalPin) {
-          // PIN is correct, add to teacher_approvals table with "approved" status
-          const teacherApprovalData = {
-            teacher_name: formData.fullName,
-            teacher_email: user.email,
-            qualification: formData.highest_qualification,
-            status: "approved",
-            approved_at: new Date().toISOString(),
-          };
-
-          const { error: approvalError } = await supabase
-            .from("teacher_approvals")
-            .insert([teacherApprovalData]);
-
-          if (approvalError) throw approvalError;
-
-          // Also update the teacher's status in the teacher table
-          const { error: updateError } = await supabase
-            .from("teacher")
-            .update({ status: "approved", approved_at: new Date().toISOString() })
-            .eq("id", user.id);
-
-          if (updateError) throw updateError;
-
-          setMessage({ text: "Profile completed and approved successfully!", type: "success" });
-        } else {
-          // Still save the profile, but the teacher will remain in "pending" status
-          setMessage({ text: "Profile completed successfully! Waiting for approval.", type: "success" });
-        }
-      } else {
-        setMessage({ text: "Profile completed successfully!", type: "success" });
-      }
+      setMessage({ text: "Profile completed successfully!", type: "success" });
 
       // Redirect based on role after a short delay
       setTimeout(() => {
@@ -260,15 +219,6 @@ const ProfileCompletion = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Verify if the user is a HOD or Admin and can approve teachers
-  const verifyTeacherApproval = async () => {
-    // This is a simplified check. In a real application, you would verify
-    // if current user is HOD/Admin from their session or a database lookup
-    const approvalPin = "123456"; // Same PIN defined earlier
-
-    return pin === approvalPin;
   };
 
   const roleCards = [
@@ -574,247 +524,233 @@ const ProfileCompletion = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Approval PIN (For HOD/Admin approval)
+                      Years of Experience
                     </label>
+                    <input
+                      type="number"
+                      name="experience"
+                      value={formData.experience}
+                      placeholder="e.g., 5"
+                      min="0"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Highest Qualification
+                    </label>
+                    <select
+                      name="highest_qualification"
+                      value={formData.highest_qualification}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Select Qualification</option>
+                      {qualificationOptions.map((qual, index) => (
+                        <option key={index} value={qual}>
+                          {qual}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Teaching Level
+                    </label>
+                    <select
+                      name="teaching_level"
+                      value={formData.teaching_level}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Select Level</option>
+                      {teachingLevelOptions.map((level, index) => (
+                        <option key={index} value={level}>
+                          {level}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Bio/Introduction
+                    </label>
+                    <textarea
+                      name="bio"
+                      value={formData.bio}
+                      placeholder="Brief introduction about yourself"
+                      rows="3"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
+                      onChange={handleChange}
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {formData.role === "HOD" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
+                  HOD Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Department Expertise
+                    </label>
+                    <input
+                      type="text"
+                      name="department_expertise"
+                      value={formData.department_expertise}
+                      placeholder="e.g., Science Department"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="pin" className="block text-sm font-medium text-gray-700 mb-1">
+                      Security PIN
+                    </label>
+                    <div className="relative">
                       <input
                         id="pin"
                         type="password"
                         value={pin}
                         onChange={(e) => setPin(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
-                        placeholder="Enter approval PIN if authorized"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Years of Experience
-                      </label>
-                      <input
-                        type="number"
-                        name="experience"
-                        value={formData.experience}
-                        placeholder="e.g., 5"
-                        min="0"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
-                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                        placeholder="Enter system-provided PIN"
                         required
                       />
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Highest Qualification
-                      </label>
-                      <select
-                        name="highest_qualification"
-                        value={formData.highest_qualification}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Select Qualification</option>
-                        {qualificationOptions.map((qual, index) => (
-                          <option key={index} value={qual}>
-                            {qual}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Years of Experience
+                    </label>
+                    <input
+                      type="number"
+                      name="experience"
+                      value={formData.experience}
+                      placeholder="e.g., 8"
+                      min="0"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Teaching Level
-                      </label>
-                      <select
-                        name="teaching_level"
-                        value={formData.teaching_level}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Select Level</option>
-                        {teachingLevelOptions.map((level, index) => (
-                          <option key={index} value={level}>
-                            {level}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Highest Qualification
+                    </label>
+                    <select
+                      name="highest_qualification"
+                      value={formData.highest_qualification}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Select Qualification</option>
+                      {qualificationOptions.map((qual, index) => (
+                        <option key={index} value={qual}>
+                          {qual}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Bio/Introduction
-                      </label>
-                      <textarea
-                        name="bio"
-                        value={formData.bio}
-                        placeholder="Brief introduction about yourself"
-                        rows="3"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
-                        onChange={handleChange}
-                      ></textarea>
-                    </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Vision for Department
+                    </label>
+                    <textarea
+                      name="vision_department"
+                      value={formData.vision_department}
+                      placeholder="Brief description of your vision for the department"
+                      rows="3"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                      onChange={handleChange}
+                    ></textarea>
                   </div>
                 </div>
+              </div>
             )}
 
-                {formData.role === "HOD" && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
-                      HOD Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Department Expertise
-                        </label>
-                        <input
-                          type="text"
-                          name="department_expertise"
-                          value={formData.department_expertise}
-                          placeholder="e.g., Science Department"
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
+            {formData.role === "Admin" && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
+                  Admin Information
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Admin Role
+                  </label>
+                  <select
+                    name="admin_access_level"
+                    value={formData.admin_access_level}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select Admin Role</option>
+                    {adminAccessLevels.map((level, index) => (
+                      <option key={index} value={level}>
+                        {level}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                      <div>
-                        <label htmlFor="pin" className="block text-sm font-medium text-gray-700 mb-1">
-                          Security PIN
-                        </label>
-                        <div className="relative">
-                          <input
-                            id="pin"
-                            type="password"
-                            value={pin}
-                            onChange={(e) => setPin(e.target.value)}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                            placeholder="Enter system-provided PIN"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Years of Experience
-                        </label>
-                        <input
-                          type="number"
-                          name="experience"
-                          value={formData.experience}
-                          placeholder="e.g., 8"
-                          min="0"
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Highest Qualification
-                        </label>
-                        <select
-                          name="highest_qualification"
-                          value={formData.highest_qualification}
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                          onChange={handleChange}
-                          required
-                        >
-                          <option value="">Select Qualification</option>
-                          {qualificationOptions.map((qual, index) => (
-                            <option key={index} value={qual}>
-                              {qual}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Vision for Department
-                        </label>
-                        <textarea
-                          name="vision_department"
-                          value={formData.vision_department}
-                          placeholder="Brief description of your vision for the department"
-                          rows="3"
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                          onChange={handleChange}
-                        ></textarea>
-                      </div>
-                    </div>
+                <div>
+                  <label htmlFor="pin" className="block text-sm font-medium text-gray-700 mb-1">
+                    Security PIN
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="pin"
+                      type="password"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                      placeholder="Enter system-provided PIN"
+                      required
+                    />
                   </div>
-                )}
+                </div>
+              </div>
+            )}
 
-                {formData.role === "Admin" && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
-                      Admin Information
-                    </h3>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Admin Role
-                      </label>
-                      <select
-                        name="admin_access_level"
-                        value={formData.admin_access_level}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Select Admin Role</option>
-                        {adminAccessLevels.map((level, index) => (
-                          <option key={index} value={level}>
-                            {level}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label htmlFor="pin" className="block text-sm font-medium text-gray-700 mb-1">
-                        Security PIN
-                      </label>
-                      <div className="relative">
-                        <input
-                          id="pin"
-                          type="password"
-                          value={pin}
-                          onChange={(e) => setPin(e.target.value)}
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                          placeholder="Enter system-provided PIN"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className={`w-full py-3 rounded-lg font-semibold text-white ${loading
-                    ? "bg-blue-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                    } transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2`}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    "Complete Profile"
-                  )}
-                </button>
-              </form>
+            <button
+              type="submit"
+              className={`w-full py-3 rounded-lg font-semibold text-white ${loading
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                } transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2`}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                "Complete Profile"
+              )}
+            </button>
+          </form>
         </div>
       </div>
     </div>
