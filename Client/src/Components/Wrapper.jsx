@@ -4,7 +4,7 @@ import { supabase } from '../helper/supabaseClient';
 import { MyContext } from '../AllContext';
 
 // Define public routes (no authentication needed)
-const publicRoutes = ['/', '/login', '/signup', '/about', '/courses', '/update-password', '/profile-completion'];
+const publicRoutes = ['/', '/login', '/signup', '/about', '/courses', '/update-password'];
 
 // Define role-based access for protected routes
 const routeAccess = {
@@ -40,16 +40,7 @@ const Wrapper = ({ children }) => {
                     return;
                 }
 
-                // Handle special case for profile completion page
-                if (location.pathname === '/profile-completion') {
-                    setAuthState({
-                        authenticated: true,
-                        userRole: 'pending',
-                        userData: session.user,
-                        loading: false
-                    });
-                    return;
-                }
+                // We'll handle profile-completion route after checking all tables
 
                 let userRole = null;
                 let userData = null;
@@ -128,7 +119,7 @@ const Wrapper = ({ children }) => {
                         return;
                     }
                     
-                    // User authenticated but not in any role table - redirect to profile completion
+                    // User authenticated but not in any role table
                     setAuthState({
                         authenticated: true,
                         userRole: 'new',
@@ -136,14 +127,41 @@ const Wrapper = ({ children }) => {
                         loading: false
                     });
                     
+                    // If user is not on profile-completion page, redirect them there
                     if (location.pathname !== '/profile-completion') {
-                        // Only redirect if not already on profile completion
                         window.location.href = '/profile-completion';
                         return;
                     }
+                    // If they are already on profile-completion, let them stay there
                     return;
                 }
 
+                // Check if user is trying to access profile-completion route
+                if (location.pathname === '/profile-completion') {
+                    // If user already has a role (exists in any table), redirect them to appropriate dashboard
+                    let redirectPath = '/';
+                    switch (userRole) {
+                        case 'student':
+                            redirectPath = '/student-profile';
+                            break;
+                        case 'teacher':
+                            redirectPath = '/dashboard';
+                            break;
+                        case 'hod':
+                            redirectPath = '/dashboard';
+                            break;
+                        case 'admin':
+                            redirectPath = '/dashboard';
+                            break;
+                        default:
+                            redirectPath = '/';
+                    }
+                    
+                    // Redirect user away from profile-completion
+                    window.location.href = redirectPath;
+                    return;
+                }
+                
                 setAuthState({
                     authenticated: true,
                     userRole,
@@ -173,6 +191,39 @@ const Wrapper = ({ children }) => {
     // Public routes don't require auth
     if (publicRoutes.includes(location.pathname)) {
         return <>{children}</>;
+    }
+    
+    // Special handling for profile-completion route
+    if (location.pathname === '/profile-completion') {
+        // If not authenticated, redirect to login
+        if (!authState.authenticated) {
+            return <Navigate to="/login" state={{ from: location }} replace />;
+        }
+        
+        // Only users with 'new' role (not in any table) can access profile-completion
+        if (authState.userRole === 'new') {
+            return <>{children}</>;
+        } else {
+            // Users who already have a role should be redirected to their dashboard
+            let redirectPath = '/';
+            switch (authState.userRole) {
+                case 'student':
+                    redirectPath = '/student-profile';
+                    break;
+                case 'teacher':
+                    redirectPath = '/dashboard';
+                    break;
+                case 'hod':
+                    redirectPath = '/dashboard';
+                    break;
+                case 'admin':
+                    redirectPath = '/dashboard';
+                    break;
+                default:
+                    redirectPath = '/';
+            }
+            return <Navigate to={redirectPath} state={{ from: location }} replace />;
+        }
     }
 
     // Handle new users who need profile completion
