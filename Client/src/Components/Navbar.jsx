@@ -553,6 +553,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
+                  onClick={scrollToTop}
                   className="hidden md:block px-4 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors duration-300"
                   aria-label="Login"
                 >
@@ -564,7 +565,8 @@ const Navbar = () => {
                 >
                   <Link
                     to="/signup"
-                    className="hidden md:block px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-sm hover:shadow-md"
+                    onClick={scrollToTop}
+                    className="hidden md:block px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-colors duration-300"
                     aria-label="Sign Up"
                   >
                     Get Started
@@ -700,40 +702,26 @@ const Navbar = () => {
 };
 
 // Reusable components
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+};
+
 const NavLink = ({ to, icon, text, isActive, badge }) => (
   <Link
     to={to}
-    className={`relative flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 group ${isActive
-      ? "text-indigo-600 bg-indigo-50/80"
-      : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50/50"
-      }`}
-    aria-current={isActive ? "page" : undefined}
+    onClick={scrollToTop}
+    className={`px-3 py-2 rounded-lg flex items-center space-x-1 transition-colors duration-200 ${isActive ? 'text-indigo-600 bg-indigo-50' : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'}`}
   >
-    <motion.span
-      className={`mr-2 transition-colors duration-300 ${isActive ? "text-indigo-500" : "text-gray-500 group-hover:text-indigo-500"
-        }`}
-      whileHover={{ rotate: 10 }}
-    >
-      {icon}
-    </motion.span>
-    {text}
+    {icon}
+    <span>{text}</span>
     {badge && (
-      <motion.span
-        className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring" }}
-      >
-        {badge > 9 ? "9+" : badge}
-      </motion.span>
+      <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+        {badge}
+      </span>
     )}
-    <motion.span
-      className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4/5 h-0.5 ${isActive ? "opacity-100" : "opacity-0"
-        } bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full`}
-      initial={{ width: isActive ? "80%" : 0 }}
-      whileHover={{ width: "80%", opacity: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    />
   </Link>
 );
 
@@ -749,7 +737,10 @@ const MobileNavLink = ({ to, icon, text, onClick, badge, className = "" }) => (
         ? ""
         : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
         }`}
-      onClick={onClick}
+      onClick={(e) => {
+        scrollToTop();
+        if (onClick) onClick(e);
+      }}
     >
       <div className="flex items-center">
         <motion.span

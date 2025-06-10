@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FaPhoneAlt, FaMapMarkerAlt, FaEnvelope, FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGraduationCap, FaChalkboardTeacher, FaUserGraduate, FaBook } from 'react-icons/fa';
-import { useLocation } from 'react-router-dom';
+import { redirect, useLocation } from 'react-router-dom';
 
 const Footer = () => {
   const location = useLocation();
@@ -54,14 +54,16 @@ const Footer = () => {
             </p>
             <div className="flex space-x-4">
               {[
-                { icon: <FaFacebookF className="text-lg" />, color: "hover:bg-blue-600" },
-                { icon: <FaTwitter className="text-lg" />, color: "hover:bg-sky-500" },
-                { icon: <FaInstagram className="text-lg" />, color: "hover:bg-pink-600" },
-                { icon: <FaLinkedinIn className="text-lg" />, color: "hover:bg-blue-700" }
+                { icon: <FaFacebookF className="text-lg" />, color: "hover:bg-blue-600", redirect: 'https://www.facebook.com' },
+                { icon: <FaTwitter className="text-lg" />, color: "hover:bg-sky-500", redirect:'https://www.twitter.com/' },
+                { icon: <FaInstagram className="text-lg" />, color: "hover:bg-pink-600", redirect: 'https://www.instagram.com/deepnex.in?igsh=bjJ1bjUybXozZmh6' },
+                { icon: <FaLinkedinIn className="text-lg" />, color: "hover:bg-blue-700", redirect: 'https://www.linkedin.com/company/deepnex/posts/?feedView=all' }
               ].map((social, index) => (
                 <motion.a
                   key={index}
-                  href="#"
+                  href={social.redirect || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={`w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-white transition-all duration-300 ${social.color}`}
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   whileTap={{ scale: 0.95 }}

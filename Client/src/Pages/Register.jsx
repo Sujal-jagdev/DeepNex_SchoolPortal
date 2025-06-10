@@ -156,7 +156,7 @@ const Register = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
                     {role} Registration PIN{" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -1023,10 +1023,12 @@ const Register = () => {
                             type="text"
                             name="fullname"
                             value={formData.fullname}
-                            placeholder="John Doe"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                            onChange={handleChange}
+                            placeholder="Enter your full name"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                            pattern="[A-Za-z ]{2,50}"
+                            title="Name should only contain letters and spaces, between 2-50 characters"
                             required
+                            autoComplete="name"
                           />
                         </div>
 
@@ -1039,10 +1041,13 @@ const Register = () => {
                             type="email"
                             name="email"
                             value={formData.email}
-                            placeholder="john@example.com"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                             onChange={handleChange}
+                            placeholder="Enter your email address"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                            pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                            title="Please enter a valid email address"
                             required
+                            autoComplete="email"
                           />
                         </div>
 
@@ -1053,7 +1058,7 @@ const Register = () => {
                           <select
                             name="gender"
                             value={formData.gender}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2                         focus:ring-blue-200 outline-none transition-all"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2                         focus:ring-purple-200 outline-none transition-all"
                             onChange={handleChange}
                             required
                           >
@@ -1074,13 +1079,23 @@ const Register = () => {
                             Phone Number <span className="text-red-500">*</span>
                           </label>
                           <input
-                            type="tel"
+                            type="text"
+                            inputMode="numeric"
                             name="phonenumber"
                             value={formData.phonenumber}
-                            placeholder="+91 9876543210"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                            onChange={handleChange}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9]/g, '');
+                              if (value.length <= 10) {
+                                setFormData(prev => ({ ...prev, phonenumber: value }));
+                              }
+                            }}
+                            placeholder="Enter 10-digit mobile number"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                            pattern="[0-9]{10}"
+                            title="Please enter a valid 10-digit mobile number"
+                            maxLength="10"
                             required
+                            autoComplete="tel"
                           />
                         </div>
 
@@ -1092,10 +1107,13 @@ const Register = () => {
                             type="password"
                             name="password"
                             value={formData.password}
-                            placeholder="••••••••"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                             onChange={handleChange}
+                            placeholder="Create a strong password"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                            title="Password must contain at least 8 characters, including uppercase, lowercase, numbers and special characters"
                             required
+                            autoComplete="new-password"
                           />
                         </div>
 
@@ -1108,10 +1126,13 @@ const Register = () => {
                             type="password"
                             name="confirmPassword"
                             value={formData.confirmPassword}
-                            placeholder="••••••••"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                             onChange={handleChange}
+                            placeholder="Confirm your password"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+                            title="Passwords must match"
                             required
+                            autoComplete="new-password"
                           />
                         </div>
                       </div>
@@ -1212,9 +1233,11 @@ const Register = () => {
                               type="text"
                               name="parents_name"
                               value={formData.parents_name}
-                              placeholder="Parent's full name"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="Enter parent's full name"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                              pattern="[A-Za-z ]{2,50}"
+                              title="Name should only contain letters and spaces, between 2-50 characters"
                               required
                             />
                           </div>
@@ -1228,10 +1251,19 @@ const Register = () => {
                               type="tel"
                               name="parents_num"
                               value={formData.parents_num}
-                              placeholder="+91 9876543210"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                              onChange={handleChange}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9]/g, '');
+                                if (value.length <= 10) {
+                                  setFormData(prev => ({ ...prev, parents_num: value }));
+                                }
+                              }}
+                              placeholder="Enter parent's 10-digit mobile number"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
+                              pattern="[0-9]{10}"
+                              title="Please enter a valid 10-digit mobile number"
+                              maxLength="10"
                               required
+                              autoComplete="tel"
                             />
                           </div>
 
@@ -1242,26 +1274,17 @@ const Register = () => {
                             <textarea
                               name="address"
                               value={formData.address}
-                              placeholder="Full residential address"
-                              rows="3"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="Enter your complete address"
+                              rows="4"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white shadow-sm hover:shadow-md resize-none placeholder:ps-5"
+                              minLength="10"
+                              maxLength="200"
+                              title="Please enter your complete address (10-200 characters)"
                               required
+                              style={{ lineHeight: '1.5', fontSize: '1rem', color:"gray"  }}
                             ></textarea>
-                          </div>
-
-                          <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Previous School (if any)
-                            </label>
-                            <input
-                              type="text"
-                              name="previous_school"
-                              value={formData.previous_school}
-                              placeholder="Name of previous school"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
-                              onChange={handleChange}
-                            />
+                            <p className="mt-1 text-sm text-gray-500">Enter your complete address including house number, street name, city, state and PIN code</p>
                           </div>
                         </div>
                       </motion.div>
