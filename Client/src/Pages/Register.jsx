@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "../helper/supabaseClient";
+// Import the new auth utilities
+import { validateForm, signUpUser, verifyRegistrationPin } from "../helper/authUtils";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -60,10 +62,6 @@ const Register = () => {
   const [showPinVerification, setShowPinVerification] = useState(false);
   const [pinVerified, setPinVerified] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
-
-  // Generate secure 8-digit PINs (in production, these should come from server)
-  const HOD_REGISTRATION_PIN = "98765432"; // Example HOD PIN
-  const ADMIN_REGISTRATION_PIN = "18324967"; // Example Admin PIN
 
   // Role selection with security checks
   const selectRole = (role) => {
@@ -113,7 +111,7 @@ const Register = () => {
 
       setIsLoading(true);
       try {
-        // In production, verify PIN with server
+        // Use the centralized PIN verification function
         await onVerify(pin);
       } finally {
         setIsLoading(false);
@@ -156,7 +154,7 @@ const Register = () => {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     {role} Registration PIN{" "}
                     <span className="text-red-500">*</span>
                   </label>
@@ -198,6 +196,8 @@ const Register = () => {
                       {isLoading ? (
                         <svg
                           className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
                           viewBox="0 0 24 24"
                         >
                           <circle
@@ -258,39 +258,40 @@ const Register = () => {
     );
   };
 
-  // Verify PIN for HOD/Admin
+  // Verify PIN for HOD/Admin using the centralized function
   const verifyPin = async (enteredPin) => {
-    let correctPin = "";
-
-    if (selectedRole === "HOD") {
-      correctPin = HOD_REGISTRATION_PIN;
-    } else if (selectedRole === "Admin") {
-      correctPin = ADMIN_REGISTRATION_PIN;
-    }
-
-    if (enteredPin === correctPin) {
-      setPinVerified(true);
-      setShowPinVerification(false);
-      setCurrentStep(2);
-      setPinAttempts(0);
-      toast.success("PIN verified successfully");
-      return true;
-    } else {
-      const attemptsLeft = 5 - pinAttempts - 1;
-      setPinAttempts(pinAttempts + 1);
-      setError(
-        `Invalid PIN. ${attemptsLeft} attempt${attemptsLeft !== 1 ? "s" : ""
-        } left.`
-      );
-
-      if (pinAttempts >= 4) {
+    try {
+      const pinType = selectedRole === 'HOD' ? 'HOD' : 'ADMIN';
+      const isValid = verifyRegistrationPin(enteredPin, pinType);
+      
+      if (isValid) {
+        setPinVerified(true);
         setShowPinVerification(false);
-        setSelectedRole(null);
+        setCurrentStep(2);
         setPinAttempts(0);
-        toast.error(
-          "Maximum PIN attempts reached. Please contact administration."
+        toast.success("PIN verified successfully");
+        return true;
+      } else {
+        const attemptsLeft = 5 - pinAttempts - 1;
+        setPinAttempts(pinAttempts + 1);
+        setError(
+          `Invalid PIN. ${attemptsLeft} attempt${attemptsLeft !== 1 ? "s" : ""
+          } left.`
         );
+
+        if (pinAttempts >= 4) {
+          setShowPinVerification(false);
+          setSelectedRole(null);
+          setPinAttempts(0);
+          toast.error(
+            "Maximum PIN attempts reached. Please contact administration."
+          );
+        }
+        return false;
       }
+    } catch (error) {
+      console.error("PIN verification error:", error);
+      toast.error("An error occurred during PIN verification");
       return false;
     }
   };
@@ -376,200 +377,34 @@ const Register = () => {
     }
   };
 
-  const validateForm = () => {
-    // Basic validation
-    if (
-      !formData.fullname ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword ||
-      !formData.phonenumber ||
-      !formData.gender ||
-      !formData.role
-    ) {
-      setError("Please fill in all required fields");
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return false;
-    }
-
-    // Role-specific validation
-    switch (formData.role) {
-      case "Student":
-        if (
-          !formData.roll_no ||
-          !formData.std ||
-          !formData.dob ||
-          !formData.parents_name ||
-          !formData.parents_num ||
-          !formData.address
-        ) {
-          setError("Please fill in all student information fields");
-          return false;
-        }
-        break;
-      case "Teacher":
-        if (
-          !formData.subject_expertise ||
-          !formData.experience ||
-          !formData.highest_qualification ||
-          !formData.teaching_level
-        ) {
-          setError("Please fill in all teacher information fields");
-          return false;
-        }
-        break;
-      case "HOD":
-        if (
-          !formData.department_expertise ||
-          !formData.experience ||
-          !formData.highest_qualification
-        ) {
-          setError("Please fill in all HOD information fields");
-          return false;
-        }
-        break;
-      case "Admin":
-        if (!formData.admin_access_level) {
-          setError("Please select an admin role");
-          return false;
-        }
-        break;
-      default:
-        setError("Please select a valid role");
-        return false;
-    }
-
-    return true;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess("");
 
-    if (!validateForm()) {
+    // Use the centralized validation function
+    if (!validateForm(formData, (errorMsg) => setError(errorMsg))) {
       setLoading(false);
       return;
     }
 
     try {
-      // First, sign up the user with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullname,
-            role: formData.role,
-            status: formData.role === "Teacher" ? "pending" : "active", // Teachers need approval
-          },
-          emailRedirectTo: `${window.location.origin}/confirm-registration`,
-        },
-      });
+      // Set the redirect URL for email confirmation
+      const redirectUrl = `${window.location.origin}/confirm-registration`;
+      
+      // Use the centralized signup function with redirect URL
+      const { data, error } = await signUpUser(formData, { redirectUrl });
 
-      if (authError) {
-        throw authError;
+      if (error) {
+        throw error;
       }
-
-      if (!authData.user) {
-        throw new Error("User registration failed");
+      
+      // Check if email confirmation is required
+      if (data?.user && !data.user.email_confirmed_at) {
+        setEmailSent(true);
+        console.log('Verification email sent to:', formData.email);
       }
-
-      // Prepare common user data
-      const commonUserData = {
-        id: authData.user.id,
-        fullname: formData.fullname,
-        email: formData.email,
-        phonenumber: formData.phonenumber,
-        gender: formData.gender,
-        created_at: new Date().toISOString(),
-        role: formData.role,
-        status: formData.role === "Teacher" ? "pending" : "active", // Teachers need approval
-      };
-
-      // Insert into specific role table
-      let roleSpecificData = {};
-      let tableName = "";
-
-      switch (formData.role) {
-        case "Student":
-          tableName = "student";
-          roleSpecificData = {
-            roll_no: formData.roll_no,
-            std: formData.std,
-            stream: formData.stream || null,
-            dob: formData.dob,
-            parents_name: formData.parents_name,
-            parents_num: formData.parents_num,
-            address: formData.address,
-            previous_school: formData.previous_school || null,
-            status: "active",
-          };
-          break;
-
-        case "Teacher":
-          tableName = "teacher";
-          roleSpecificData = {
-            subject_expertise: formData.subject_expertise,
-            experience: formData.experience,
-            highest_qualification: formData.highest_qualification,
-            teaching_level: formData.teaching_level,
-            bio: formData.bio || null,
-            status: "pending", // Requires HOD approval
-            approved_by: null,
-            approved_at: null,
-          };
-
-          // Notify HODs about pending approval (in production, implement this)
-          await notifyHodForApproval(
-            authData.user.id,
-            formData.fullname,
-            formData.subject_expertise,
-            formData.email,
-          );
-          break;
-
-        case "HOD":
-          tableName = "hod";
-          roleSpecificData = {
-            department_expertise: formData.department_expertise,
-            experience: formData.experience,
-            highest_qualification: formData.highest_qualification,
-            vision_department: formData.vision_department || null,
-            status: "active",
-          };
-          break;
-
-        case "Admin":
-          tableName = "admin";
-          roleSpecificData = {
-            admin_access_level: formData.admin_access_level,
-            status: "active",
-          };
-          break;
-      }
-
-      // Insert into the specific role table
-      const { error: roleTableError } = await supabase
-        .from(tableName)
-        .insert([{ ...commonUserData, ...roleSpecificData }]);
-
-      if (roleTableError) {
-        throw roleTableError;
-      }
-
-      // If everything is successful
-      setEmailSent(true);
 
       if (formData.role === "Teacher") {
         setSuccess(
@@ -599,589 +434,386 @@ const Register = () => {
       } else if (
         err.message?.includes("duplicate key value violates unique constraint")
       ) {
-        setError("This user information already exists in our system.");
-      } else {
         setError(
-          err.message || "An unexpected error occurred. Please try again."
+          "This email or phone number is already registered. Please use different credentials."
         );
+      } else {
+        setError("Registration failed. Please try again later.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock function to notify HOD (implement properly in production)
-  const notifyHodForApproval = async (teacherId, teacherName, subject, email) => {
-    try {
-      // In production, this would:
-      // 1. Find the relevant HOD based on subject/department
-      // 2. Send an email/notification
-      // 3. Create an approval request record in the database
-
-      console.log(
-        `HOD notification: Teacher ${teacherName} (${subject}) needs approval`
-      );
-
-      // Example of what you might do:
-      const { error } = await supabase.from("teacher_approvals").insert([
-        {
-          teacher_id: teacherId,
-          teacher_name: teacherName,
-          subject: subject,
-          status: "pending",
-          requested_at: new Date().toISOString(),
-          teacher_email: email
-        },
-      ]);
-
-      if (error) throw error;
-    } catch (err) {
-      console.error("Failed to notify HOD:", err);
-      // Even if notification fails, the teacher registration should still proceed
-    }
+  // Notify HODs about pending approval (in production, implement this)
+  const notifyHodForApproval = async (userId, teacherName, subject, email) => {
+    // This would be implemented with a server-side notification system
+    console.log(
+      `Teacher approval request: ${teacherName} (${email}) - ${subject}`
+    );
+    // In a real implementation, this would send emails or notifications to HODs
   };
 
-  const roleCards = [
-    {
-      role: "Student",
-      icon: <GraduationCap className="w-6 h-6" />,
-      color: "blue",
-      description: "Register as a school student (1st to 12th standard)",
-    },
-    {
-      role: "Teacher",
-      icon: <BookOpen className="w-6 h-6" />,
-      color: "green",
-      description: "Register as a school teacher",
-    },
-    {
-      role: "HOD",
-      icon: <Building2 className="w-6 h-6" />,
-      color: "purple",
-      description: "Register as Head of Department",
-    },
-    {
-      role: "Admin",
-      icon: <UserCog className="w-6 h-6" />,
-      color: "orange",
-      description: "Register as school administrator",
-    },
-  ];
-
-  if (registrationComplete) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
-          <h2 className="mt-3 text-2xl font-bold text-gray-900">
-            Registration Confirmed!
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Your account has been successfully verified. You can now login to
-            access your account.
-          </p>
-          <div className="mt-6">
-            <button
-              onClick={() => navigate("/login")}
-              className="w-full py-3 px-4 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              Go to Login Page
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // If email confirmation was sent, show instructions
-  if (emailSent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
-            <UserPlus className="h-6 w-6 text-blue-600" />
-          </div>
-          <h2 className="mt-3 text-2xl font-bold text-gray-900">
-            {formData.role === "Teacher"
-              ? "Registration Submitted for Approval"
-              : "Check Your Email"}
-          </h2>
-          <p className="mt-2 text-gray-600">
-            {formData.role === "Teacher" ? (
-              <>
-                Your registration has been submitted for HOD approval. We've
-                sent a confirmation to{" "}
-                <span className="font-semibold">{formData.email}</span>. You'll
-                receive another email once your account is approved.
-              </>
-            ) : (
-              <>
-                We've sent a confirmation link to{" "}
-                <span className="font-semibold">{formData.email}</span>. Please
-                click the link in that email to complete your registration.
-              </>
-            )}
-          </p>
-          <div className="mt-6 space-y-3">
-            <button
-              onClick={() => setEmailSent(false)}
-              className="w-full py-2 px-4 rounded-lg font-medium text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-300 transition-all"
-            >
-              Back to Registration
-            </button>
-            <button
-              onClick={() => navigate("/login")}
-              className="w-full py-2 px-4 rounded-lg font-medium text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 transition-all"
-            >
-              Already confirmed? Login here
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Left Column - Information */}
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <motion.h1
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-              >
-                Join Our School Community
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="text-lg md:text-xl text-gray-600"
-              >
-                Become part of our school dedicated to excellence in education
-              </motion.p>
+    <div className="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+            Join Our School Portal
+          </h1>
+          <p className="mt-3 text-xl text-gray-500">
+            Create your account to access our digital learning environment
+          </p>
+        </div>
+
+        {/* Registration Steps */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center space-x-4">
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 1
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 text-gray-500"
+                }`}
+            >
+              1
             </div>
-
-            <div className="space-y-6">
-              {roleCards.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 + 0.3, duration: 0.5 }}
-                  className={`bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 cursor-pointer ${selectedRole === item.role
-                    ? `ring-2 ring-${item.color}-500`
-                    : ""
-                    }`}
-                  onClick={() => toggleAccordion(index)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-3 rounded-lg ${item.color === "blue"
-                        ? "bg-blue-100"
-                        : item.color === "green"
-                          ? "bg-green-100"
-                          : item.color === "purple"
-                            ? "bg-purple-100"
-                            : "bg-orange-100"
-                        }`}
-                    >
-                      {React.cloneElement(item.icon, {
-                        className: `w-6 h-6 ${item.color === "blue"
-                          ? "text-blue-600"
-                          : item.color === "green"
-                            ? "text-green-600"
-                            : item.color === "purple"
-                              ? "text-purple-600"
-                              : "text-orange-600"
-                          }`,
-                      })}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {item.role}
-                      </h3>
-                      <p className="text-gray-600">{item.description}</p>
-                    </div>
-                    <ChevronDown
-                      className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${activeAccordion === index ? "transform rotate-180" : ""
-                        }`}
-                    />
-                  </div>
-
-                  {activeAccordion === index && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <ul className="space-y-2 text-sm text-gray-600">
-                        {item.role === "Student" && (
-                          <>
-                            <li className="flex items-start">
-                              <span className="text-blue-500 mr-2">•</span>
-                              Access to all class materials
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-blue-500 mr-2">•</span>
-                              Submit assignments online
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-blue-500 mr-2">•</span>
-                              View grades and feedback
-                            </li>
-                          </>
-                        )}
-                        {item.role === "Teacher" && (
-                          <>
-                            <li className="flex items-start">
-                              <span className="text-green-500 mr-2">•</span>
-                              Create and manage class content
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-green-500 mr-2">•</span>
-                              Grade student submissions
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-green-500 mr-2">•</span>
-                              Track student progress
-                            </li>
-                          </>
-                        )}
-                        {item.role === "HOD" && (
-                          <>
-                            <li className="flex items-start">
-                              <span className="text-purple-500 mr-2">•</span>
-                              Manage department teachers
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-purple-500 mr-2">•</span>
-                              Oversee curriculum development
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-purple-500 mr-2">•</span>
-                              Access department analytics
-                            </li>
-                          </>
-                        )}
-                        {item.role === "Admin" && (
-                          <>
-                            <li className="flex items-start">
-                              <span className="text-orange-500 mr-2">•</span>
-                              Manage school operations
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-orange-500 mr-2">•</span>
-                              Configure school settings
-                            </li>
-                            <li className="flex items-start">
-                              <span className="text-orange-500 mr-2">•</span>
-                              Generate school reports
-                            </li>
-                          </>
-                        )}
-                      </ul>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+            <div
+              className={`h-1 w-16 ${currentStep >= 2 ? "bg-purple-600" : "bg-gray-200"}`}
+            ></div>
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 2
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 text-gray-500"
+                }`}
+            >
+              2
+            </div>
+            <div
+              className={`h-1 w-16 ${currentStep >= 3 ? "bg-purple-600" : "bg-gray-200"}`}
+            ></div>
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full ${currentStep >= 3
+                ? "bg-purple-600 text-white"
+                : "bg-gray-200 text-gray-500"
+                }`}
+            >
+              3
             </div>
           </div>
+          <div className="flex justify-center mt-2">
+            <span className="text-sm font-medium text-gray-500">
+              {currentStep === 1
+                ? "Select Role"
+                : currentStep === 2
+                  ? "Basic Information"
+                  : "Role-Specific Details"}
+            </span>
+          </div>
+        </div>
 
-          {/* Right Column - Form */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <UserPlus className="w-6 h-6 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {currentStep === 1
-                  ? "Select Your Role"
-                  : "Complete Your Registration"}
+        {/* Main Content */}
+        <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
+          {/* Step 1: Role Selection */}
+          {currentStep === 1 && (
+            <div className="p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                Select Your Role
               </h2>
-            </div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200"
-              >
-                <p className="text-red-600">{error}</p>
-              </motion.div>
-            )}
-
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200"
-              >
-                <p className="text-green-600">{success}</p>
-              </motion.div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <AnimatePresence mode="wait">
-                {currentStep === 1 ? (
-                  <motion.div
-                    key="step1"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-6"
-                  >
-                    <h3 className="text-lg font-medium text-gray-700">
-                      I am registering as a:
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Student Card */}
+                <div
+                  onClick={() => selectRole("Student")}
+                  className={`border rounded-xl p-6 cursor-pointer transition-all ${selectedRole === "Student"
+                    ? "border-purple-500 bg-purple-50 shadow-md"
+                    : "border-gray-200 hover:border-purple-300 hover:bg-purple-50"
+                    }`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                      <GraduationCap className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Student
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {roleCards.map(({ role, icon, color, description }) => (
-                        <motion.div
-                          key={role}
-                          whileHover={{ y: -5 }}
-                          className={`flex flex-col items-center justify-center gap-3 cursor-pointer rounded-xl p-5 text-center border-2 ${selectedRole === role
-                            ? color === "blue"
-                              ? "border-blue-500 bg-blue-50"
-                              : color === "green"
-                                ? "border-green-500 bg-green-50"
-                                : color === "purple"
-                                  ? "border-purple-500 bg-purple-50"
-                                  : "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:bg-gray-50"
-                            } transition-all`}
-                          onClick={() => selectRole(role)}
-                        >
-                          <div
-                            className={`p-3 rounded-full ${color === "blue"
-                              ? "bg-blue-100"
-                              : color === "green"
-                                ? "bg-green-100"
-                                : color === "purple"
-                                  ? "bg-purple-100"
-                                  : "bg-orange-100"
-                              }`}
-                          >
-                            {React.cloneElement(icon, {
-                              className: `w-6 h-6 ${color === "blue"
-                                ? "text-blue-600"
-                                : color === "green"
-                                  ? "text-green-600"
-                                  : color === "purple"
-                                    ? "text-purple-600"
-                                    : "text-orange-600"
-                                }`,
-                            })}
-                          </div>
-                          <h4 className="font-semibold text-gray-800">
-                            {role}
-                          </h4>
-                          <p className="text-sm text-gray-500">{description}</p>
-                          <div
-                            className={`mt-2 text-sm font-medium ${color === "blue"
-                              ? "text-blue-600"
-                              : color === "green"
-                                ? "text-green-600"
-                                : color === "purple"
-                                  ? "text-purple-600"
-                                  : "text-orange-600"
-                              } flex items-center`}
-                          >
-                            Select <ChevronRight className="w-4 h-4 ml-1" />
-                          </div>
-                        </motion.div>
-                      ))}
+                    <p className="text-sm text-gray-500">
+                      Access learning materials, submit assignments, and track your
+                      progress
+                    </p>
+                  </div>
+                </div>
+
+                {/* Teacher Card */}
+                <div
+                  onClick={() => selectRole("Teacher")}
+                  className={`border rounded-xl p-6 cursor-pointer transition-all ${selectedRole === "Teacher"
+                    ? "border-blue-500 bg-blue-50 shadow-md"
+                    : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                      <BookOpen className="w-8 h-8 text-blue-600" />
                     </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="step2"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="space-y-6"
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Teacher
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Manage classes, create assignments, and communicate with
+                      students
+                    </p>
+                    {pendingApproval && selectedRole === "Teacher" && (
+                      <div className="mt-3 text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                        Requires HOD approval
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* HOD Card */}
+                <div
+                  onClick={() => selectRole("HOD")}
+                  className={`border rounded-xl p-6 cursor-pointer transition-all ${selectedRole === "HOD"
+                    ? "border-green-500 bg-green-50 shadow-md"
+                    : "border-gray-200 hover:border-green-300 hover:bg-green-50"
+                    }`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                      <Building2 className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      HOD
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Oversee department activities, approve teachers, and manage
+                      curriculum
+                    </p>
+                    <div className="mt-3 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      Requires PIN verification
+                    </div>
+                  </div>
+                </div>
+
+                {/* Admin Card */}
+                <div
+                  onClick={() => selectRole("Admin")}
+                  className={`border rounded-xl p-6 cursor-pointer transition-all ${selectedRole === "Admin"
+                    ? "border-red-500 bg-red-50 shadow-md"
+                    : "border-gray-200 hover:border-red-300 hover:bg-red-50"
+                    }`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                      <UserCog className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Admin
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Manage school operations, user accounts, and system settings
+                    </p>
+                    <div className="mt-3 text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      Requires PIN verification
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 & 3: Registration Form */}
+          {currentStep > 1 && (
+            <div className="p-8">
+              <div className="flex items-center mb-6">
+                <button
+                  onClick={goBack}
+                  className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-all"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      className="flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm"
-                    >
-                      <ChevronRight className="w-4 h-4 transform rotate-180 mr-1" />
-                      Back to role selection
-                    </button>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {currentStep === 2
+                    ? "Basic Information"
+                    : `${selectedRole} Details`}
+                </h2>
+              </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Full Name <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            name="fullname"
-                            value={formData.fullname}
-                            placeholder="Enter your full name"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                            pattern="[A-Za-z ]{2,50}"
-                            title="Name should only contain letters and spaces, between 2-50 characters"
-                            required
-                            autoComplete="name"
-                          />
-                        </div>
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-red-600">{error}</p>
+                </div>
+              )}
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email Address{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="Enter your email address"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                            pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                            title="Please enter a valid email address"
-                            required
-                            autoComplete="email"
-                          />
-                        </div>
+              {success && (
+                <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <p className="text-green-600">{success}</p>
+                </div>
+              )}
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Gender <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            name="gender"
-                            value={formData.gender}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2                         focus:ring-purple-200 outline-none transition-all"
-                            onChange={handleChange}
-                            required
-                          >
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                            <option value="Prefer not to say">
-                              Prefer not to say
-                            </option>
-                          </select>
-                        </div>
+              <form onSubmit={handleSubmit}>
+                {/* Step 2: Basic Information */}
+                {currentStep === 2 && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="fullname"
+                          value={formData.fullname}
+                          onChange={handleChange}
+                          placeholder="Enter your full name"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                          required
+                        />
                       </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Phone Number <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            name="phonenumber"
-                            value={formData.phonenumber}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, '');
-                              if (value.length <= 10) {
-                                setFormData(prev => ({ ...prev, phonenumber: value }));
-                              }
-                            }}
-                            placeholder="Enter 10-digit mobile number"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                            pattern="[0-9]{10}"
-                            title="Please enter a valid 10-digit mobile number"
-                            maxLength="10"
-                            required
-                            autoComplete="tel"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email Address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleChange}
+                          placeholder="Enter your email address"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                          required
+                        />
+                      </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Password <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            placeholder="Create a strong password"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-                            title="Password must contain at least 8 characters, including uppercase, lowercase, numbers and special characters"
-                            required
-                            autoComplete="new-password"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Password <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          name="password"
+                          value={formData.password}
+                          onChange={handleChange}
+                          placeholder="Create a password (min. 6 characters)"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                          required
+                        />
+                      </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Confirm Password{" "}
-                            <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="password"
-                            name="confirmPassword"
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
-                            placeholder="Confirm your password"
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-                            title="Passwords must match"
-                            required
-                            autoComplete="new-password"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Confirm Password <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          placeholder="Confirm your password"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Phone Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          name="phonenumber"
+                          value={formData.phonenumber}
+                          onChange={handleChange}
+                          placeholder="Enter your phone number"
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Gender <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="gender"
+                          value={formData.gender}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                          required
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                          <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
                       </div>
                     </div>
 
-                    {/* Role-specific fields */}
-                    {formData.role === "Student" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(3)}
+                        className="px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-all flex items-center gap-2"
                       >
-                        <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
-                          Student Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        Next Step
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Role-Specific Information */}
+                {currentStep === 3 && (
+                  <div>
+                    {/* Student Fields */}
+                    {selectedRole === "Student" && (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Roll Number{" "}
-                              <span className="text-red-500">*</span>
+                              Roll Number <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
                               name="roll_no"
                               value={formData.roll_no}
-                              placeholder="e.g., 2023001"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="Enter your roll number"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Standard/Class{" "}
-                              <span className="text-red-500">*</span>
+                              Standard <span className="text-red-500">*</span>
                             </label>
                             <select
                               name="std"
                               value={formData.std}
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                               onChange={handleChange}
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             >
                               <option value="">Select Standard</option>
-                              {standardOptions.map((std, index) => (
-                                <option key={index} value={std}>
-                                  {std}
+                              {standardOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
                                 </option>
                               ))}
                             </select>
@@ -1195,14 +827,14 @@ const Register = () => {
                               <select
                                 name="stream"
                                 value={formData.stream}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                                 onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                                 required
                               >
                                 <option value="">Select Stream</option>
-                                {streamOptions.map((stream, index) => (
-                                  <option key={index} value={stream}>
-                                    {stream}
+                                {streamOptions.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option}
                                   </option>
                                 ))}
                               </select>
@@ -1211,33 +843,29 @@ const Register = () => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Date of Birth{" "}
-                              <span className="text-red-500">*</span>
+                              Date of Birth <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="date"
                               name="dob"
                               value={formData.dob}
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                               onChange={handleChange}
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Parent's Name{" "}
-                              <span className="text-red-500">*</span>
+                              Parent's Name <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
                               name="parents_name"
                               value={formData.parents_name}
                               onChange={handleChange}
-                              placeholder="Enter parent's full name"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                              pattern="[A-Za-z ]{2,50}"
-                              title="Name should only contain letters and spaces, between 2-50 characters"
+                              placeholder="Enter parent's name"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             />
                           </div>
@@ -1251,19 +879,10 @@ const Register = () => {
                               type="tel"
                               name="parents_num"
                               value={formData.parents_num}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9]/g, '');
-                                if (value.length <= 10) {
-                                  setFormData(prev => ({ ...prev, parents_num: value }));
-                                }
-                              }}
-                              placeholder="Enter parent's 10-digit mobile number"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all bg-white shadow-sm hover:shadow-md"
-                              pattern="[0-9]{10}"
-                              title="Please enter a valid 10-digit mobile number"
-                              maxLength="10"
+                              onChange={handleChange}
+                              placeholder="Enter parent's phone number"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
-                              autoComplete="tel"
                             />
                           </div>
 
@@ -1275,61 +894,61 @@ const Register = () => {
                               name="address"
                               value={formData.address}
                               onChange={handleChange}
-                              placeholder="Enter your complete address"
-                              rows="4"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all bg-white shadow-sm hover:shadow-md resize-none placeholder:ps-5"
-                              minLength="10"
-                              maxLength="200"
-                              title="Please enter your complete address (10-200 characters)"
+                              placeholder="Enter your address"
+                              rows="3"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
-                              style={{ lineHeight: '1.5', fontSize: '1rem', color:"gray"  }}
                             ></textarea>
-                            <p className="mt-1 text-sm text-gray-500">Enter your complete address including house number, street name, city, state and PIN code</p>
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Previous School (if applicable)
+                            </label>
+                            <input
+                              type="text"
+                              name="previous_school"
+                              value={formData.previous_school}
+                              onChange={handleChange}
+                              placeholder="Enter previous school name"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                            />
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     )}
 
-                    {formData.role === "Teacher" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
-                      >
-                        <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
-                          Teacher Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Teacher Fields */}
+                    {selectedRole === "Teacher" && (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Subject Expertise{" "}
-                              <span className="text-red-500">*</span>
+                              Subject Expertise <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
                               name="subject_expertise"
                               value={formData.subject_expertise}
-                              placeholder="e.g., Mathematics, Physics"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="E.g., Mathematics, Science, English"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Years of Experience{" "}
-                              <span className="text-red-500">*</span>
+                              Years of Experience <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="number"
                               name="experience"
                               value={formData.experience}
-                              placeholder="e.g., 5"
-                              min="0"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="Enter years of teaching experience"
+                              min="0"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             />
                           </div>
@@ -1342,14 +961,14 @@ const Register = () => {
                             <select
                               name="highest_qualification"
                               value={formData.highest_qualification}
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
                               onChange={handleChange}
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             >
                               <option value="">Select Qualification</option>
-                              {qualificationOptions.map((qual, index) => (
-                                <option key={index} value={qual}>
-                                  {qual}
+                              {qualificationOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
                                 </option>
                               ))}
                             </select>
@@ -1357,20 +976,19 @@ const Register = () => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Teaching Level{" "}
-                              <span className="text-red-500">*</span>
+                              Teaching Level <span className="text-red-500">*</span>
                             </label>
                             <select
                               name="teaching_level"
                               value={formData.teaching_level}
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
                               onChange={handleChange}
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             >
-                              <option value="">Select Level</option>
-                              {teachingLevelOptions.map((level, index) => (
-                                <option key={index} value={level}>
-                                  {level}
+                              <option value="">Select Teaching Level</option>
+                              {teachingLevelOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
                                 </option>
                               ))}
                             </select>
@@ -1383,27 +1001,51 @@ const Register = () => {
                             <textarea
                               name="bio"
                               value={formData.bio}
-                              placeholder="Brief introduction about yourself"
-                              rows="3"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="Brief introduction about yourself and your teaching philosophy"
+                              rows="4"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                             ></textarea>
                           </div>
                         </div>
-                      </motion.div>
+
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0">
+                              <svg
+                                className="h-5 w-5 text-amber-400"
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-amber-800">
+                                Teacher Registration Approval
+                              </h3>
+                              <div className="mt-2 text-sm text-amber-700">
+                                <p>
+                                  Your registration will be reviewed by a Head of
+                                  Department (HOD). You'll receive an email notification
+                                  once your account is approved.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )}
 
-                    {formData.role === "HOD" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
-                      >
-                        <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
-                          HOD Information
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* HOD Fields */}
+                    {selectedRole === "HOD" && (
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Department Expertise{" "}
@@ -1413,26 +1055,25 @@ const Register = () => {
                               type="text"
                               name="department_expertise"
                               value={formData.department_expertise}
-                              placeholder="e.g., Science Department"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="E.g., Science Department, Mathematics Department"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Years of Experience{" "}
-                              <span className="text-red-500">*</span>
+                              Years of Experience <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="number"
                               name="experience"
                               value={formData.experience}
-                              placeholder="e.g., 8"
+                              onChange={handleChange}
+                              placeholder="Enter years of experience"
                               min="0"
                               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
-                              onChange={handleChange}
                               required
                             />
                           </div>
@@ -1442,20 +1083,15 @@ const Register = () => {
                               Highest Qualification{" "}
                               <span className="text-red-500">*</span>
                             </label>
-                            <select
+                            <input
+                              type="text"
                               name="highest_qualification"
                               value={formData.highest_qualification}
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="E.g., Ph.D. in Physics, M.Ed. in Education"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               required
-                            >
-                              <option value="">Select Qualification</option>
-                              {qualificationOptions.map((qual, index) => (
-                                <option key={index} value={qual}>
-                                  {qual}
-                                </option>
-                              ))}
-                            </select>
+                            />
                           </div>
 
                           <div className="md:col-span-2">
@@ -1465,26 +1101,19 @@ const Register = () => {
                             <textarea
                               name="vision_department"
                               value={formData.vision_department}
-                              placeholder="Brief description of your vision for the department"
-                              rows="3"
-                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                               onChange={handleChange}
+                              placeholder="Share your vision and goals for the department"
+                              rows="4"
+                              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                             ></textarea>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     )}
 
-                    {formData.role === "Admin" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
-                      >
-                        <h3 className="text-lg font-medium text-gray-700 border-b pb-2">
-                          Admin Information
-                        </h3>
+                    {/* Admin Fields */}
+                    {selectedRole === "Admin" && (
+                      <div className="space-y-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
                             Admin Role <span className="text-red-500">*</span>
@@ -1492,38 +1121,31 @@ const Register = () => {
                           <select
                             name="admin_access_level"
                             value={formData.admin_access_level}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
                             onChange={handleChange}
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                             required
                           >
                             <option value="">Select Admin Role</option>
-                            {adminAccessLevels.map((level, index) => (
-                              <option key={index} value={level}>
-                                {level}
+                            {adminAccessLevels.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
                               </option>
                             ))}
                           </select>
                         </div>
-                      </motion.div>
+                      </div>
                     )}
 
-                    <div className="pt-4">
+                    <div className="mt-8">
                       <button
                         type="submit"
                         disabled={loading}
-                        className={`w-full py-4 px-6 rounded-xl font-semibold text-white ${formData.role === "Student"
-                          ? "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                          : formData.role === "Teacher"
-                            ? "bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800"
-                            : formData.role === "HOD"
-                              ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
-                              : "bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
-                          } transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center`}
+                        className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
                       >
                         {loading ? (
                           <>
                             <svg
-                              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                              className="animate-spin h-5 w-5 text-white"
                               xmlns="http://www.w3.org/2000/svg"
                               fill="none"
                               viewBox="0 0 24 24"
@@ -1545,26 +1167,66 @@ const Register = () => {
                             Processing...
                           </>
                         ) : (
-                          "Complete Registration"
+                          <>
+                            <UserPlus className="w-5 h-5" />
+                            Complete Registration
+                          </>
                         )}
                       </button>
-                    </div>
 
-                    <div className="text-center text-sm text-gray-500">
-                      Already have an account?{" "}
-                      <button
-                        type="button"
-                        onClick={() => navigate("/login")}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        Login here
-                      </button>
+                      <p className="mt-4 text-sm text-gray-600 text-center">
+                        By registering, you agree to our{" "}
+                        <a href="#" className="text-purple-600 hover:underline">
+                          Terms of Service
+                        </a>{" "}
+                        and{" "}
+                        <a href="#" className="text-purple-600 hover:underline">
+                          Privacy Policy
+                        </a>
+                        .
+                      </p>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
-              </AnimatePresence>
-            </form>
-          </div>
+              </form>
+            </div>
+          )}
+
+          {/* Registration Success */}
+          {registrationComplete && (
+            <div className="p-8 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Registration Complete!
+              </h2>
+              <p className="text-gray-600 mb-6">
+                {selectedRole === "Teacher"
+                  ? "Your registration has been submitted for approval. You'll receive an email once your account is approved."
+                  : "Your account has been created successfully. Please check your email to verify your account."}
+              </p>
+              <button
+                onClick={() => navigate("/login")}
+                className="px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-all"
+              >
+                Go to Login
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Already have an account */}
+        <div className="mt-8 text-center">
+          <p className="text-gray-600">
+            Already have an account?{" "}
+            <a
+              href="/login"
+              className="text-purple-600 font-medium hover:underline"
+            >
+              Log in
+            </a>
+          </p>
         </div>
       </div>
 

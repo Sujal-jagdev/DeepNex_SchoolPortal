@@ -1,15 +1,36 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = "https://rvkpcwkavhjxsnjxnnuv.supabase.co";
-const apikey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2a3Bjd2thdmhqeHNuanhubnV2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NDY5MzkxNiwiZXhwIjoyMDYwMjY5OTE2fQ.wDjQRqFhImcS2S6SNPDSyFnjCM2OFq_wOhhmTsUkEn0";
+// Use environment variables for Supabase configuration
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create Supabase client with custom headers to fix 406 Not Acceptable error
-export const supabase = createClient(supabaseUrl, apikey, {
+// Ensure environment variables are loaded
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('Supabase environment variables are missing!');
+}
+
+// Create Supabase client with enhanced configuration
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
         flowType: 'pkce',
         autoRefreshToken: true,
         detectSessionInUrl: true,
         persistSession: true,
-        storage: window.localStorage
+        storage: window.localStorage,
+        // Ensure email verification works properly
+        emailRedirectTo: `${window.location.origin}/confirm-registration`,
+        // Debug mode for development
+        debug: import.meta.env.DEV
+    },
+    // Global error handler
+    global: {
+        fetch: (...args) => fetch(...args)
+            .catch(error => {
+                console.error('Supabase fetch error:', error);
+                throw error;
+            })
     }
 });
+
+// Log successful initialization
+console.log('Supabase client initialized with URL:', supabaseUrl);

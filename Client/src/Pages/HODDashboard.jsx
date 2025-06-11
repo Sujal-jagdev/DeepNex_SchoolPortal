@@ -590,7 +590,7 @@ const HODDashboard = () => {
       if (error) {
         // Enhanced error logging
         const errorDetails = {
-          message: error.message,
+          errorMessage: error.message,
           code: error.code,
           details: error.details,
           hint: error.hint,
@@ -607,7 +607,7 @@ const HODDashboard = () => {
       // More detailed error logging
       const errorInfo = {
         name: err.name,
-        message: err.message,
+        errorMessage: err.message,
         stack: err.stack,
         teacherId,
         type,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Phone, ChevronDown, Stethoscope, Building2, Users, GraduationCap, UserCog } from "lucide-react";
 import { supabase } from "../helper/supabaseClient";
+import { validateForm, addTeacherApproval, verifyRegistrationPin, signOutUser, getRedirectPathForRole } from "../helper/authUtils";
 
 const ProfileCompletion = () => {
   const [formData, setFormData] = useState({
@@ -118,15 +119,25 @@ const ProfileCompletion = () => {
     setMessage({ text: "", type: "" });
 
     try {
-      // Prepare the data to be inserted
+      // Validate form data
+      if (!validateForm(formData, (errorMsg) => setMessage({ text: errorMsg, type: "error" }))) {
+        setLoading(false);
+        return;
+      }
 
+      // Verify PIN for HOD and Admin roles
       if (formData.role === "HOD" || formData.role === "Admin") {
-        const expectedPin = formData.role === "HOD" ? "98765432" : "18324967";
-        if (pin !== expectedPin) {
-          throw new Error("Invalid PIN. Please enter the correct PIN.");
+        const pinType = formData.role === "HOD" ? "HOD" : "ADMIN";
+        const isPinValid = verifyRegistrationPin(pin, pinType);
+        
+        if (!isPinValid) {
+          setMessage({ text: "Invalid PIN. Please enter the correct PIN.", type: "error" });
+          setLoading(false);
+          return;
         }
       }
 
+      // Prepare the data to be inserted
       const profileData = {
         id: user.id,
         fullname: formData.fullName,
@@ -189,13 +200,9 @@ const ProfileCompletion = () => {
 
       // Determine the table name based on role
       const tableName = formData.role.toLowerCase();
-      if (tableName === "admin") {
-        // For admin, we might use a different table name
-        profileData.role = "admin"; // Ensure role is set correctly
-      }
 
       // Insert data into the appropriate table
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from(tableName)
         .insert([profileData]);
 
@@ -210,7 +217,7 @@ const ProfileCompletion = () => {
 
         // Log out and redirect after 2 seconds
         setTimeout(async () => {
-          await supabase.auth.signOut();
+          await signOutUser();
           navigate("/login", {
             state: {
               message: "Your account is pending approval. Please wait for admin approval."
@@ -222,17 +229,8 @@ const ProfileCompletion = () => {
 
         // Redirect other roles after delay
         setTimeout(() => {
-          switch (formData.role) {
-            case "Student":
-              navigate("/student-profile");
-              break;
-            case "HOD":
-            case "Admin":
-              navigate("/dashboard");
-              break;
-            default:
-              navigate("/");
-          }
+          const redirectPath = getRedirectPathForRole(formData.role.toLowerCase());
+          navigate(redirectPath);
         }, 1500);
       }
 
@@ -241,20 +239,6 @@ const ProfileCompletion = () => {
       setMessage({ text: error.message || "Failed to save profile", type: "error" });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const addTeacherApproval = async (approvalData) => {
-    try {
-      const { error } = await supabase
-        .from("teacher_approvals")
-        .insert([approvalData]);
-
-      if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error("Error adding teacher approval:", error);
-      throw error;
     }
   };
 
