@@ -3,14 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster, toast } from 'react-hot-toast'
 
 // Pages
-import Home from './pages/Home'
+import Home from './pages/Home.jsx'
 import About from './pages/About.jsx'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import NotFound from './pages/NotFound'
-import ProfileCompletion from './pages/ProfileCompletion'
-import ResetPassword from './pages/ResetPassword'
-import ForgotPassword from './pages/ForgotPassword'
+import Login from './pages/Login.jsx'
+import Signup from './pages/Signup.jsx'
+import NotFound from './pages/NotFound.jsx'
+import ProfileCompletion from './pages/ProfileCompletion.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
 
 // Dashboards
 import StudentDashboard from './pages/dashboards/StudentDashboard'
