@@ -4,7 +4,6 @@ import { Toaster, toast } from 'react-hot-toast'
 
 // Pages
 import Home from './pages/Home'
-import Courses from './pages/Courses'
 import About from './pages/About'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -98,15 +97,6 @@ function App() {
             <Navbar isAuthenticated={isAuthenticated} userRole={userRole} onLogout={handleLogout} />
             <main className="flex-grow">
               <Home />
-            </main>
-            <Footer />
-          </div>
-        } />
-        <Route path="/courses" element={
-          <div className="flex flex-col min-h-screen">
-            <Navbar isAuthenticated={isAuthenticated} userRole={userRole} onLogout={handleLogout} />
-            <main className="flex-grow">
-              <Courses />
             </main>
             <Footer />
           </div>
