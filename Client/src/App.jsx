@@ -4,7 +4,7 @@ import { Toaster, toast } from 'react-hot-toast'
 
 // Pages
 import Home from './pages/Home'
-import About from './pages/About'
+import About from './pages/About.jsx'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import NotFound from './pages/NotFound'
