@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Bars3Icon, XMarkIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 import { UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
+import logo2 from '../../assets/logo2.png'; // Adjust the path as necessary
 
 const Navbar = ({ isAuthenticated, userRole, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -52,7 +53,7 @@ const Navbar = ({ isAuthenticated, userRole, onLogout }) => {
         <div className="flex justify-between items-center">
           {/* EduNex Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-10 w-auto" />
+            <img src={logo2} alt="EduNex Logo" className="h-10 w-auto" />
             <span className="logo-text text-xl font-display text-secondary">
               Edu<span className="text-bright-green">Nex</span>
             </span>
