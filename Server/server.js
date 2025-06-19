@@ -1,161 +1,100 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
-const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const helmet = require('helmet');
+const fileManager = require('./Utils/fileManager');
+const errorHandler = require('./Middleware/errorHandler');
 
+// Import routes
+const authRoutes = require('./Routes/auth.routes');
+const roleRoutes = require('./Routes/role.routes');
+const trustyRoutes = require('./Routes/trusty.routes');
+const chatRoutes = require('./Routes/chat.routes');
+const lessonPlanRoutes = require('./Routes/lessonPlan.routes');
+
+// Initialize Express app
 const app = express();
+
+// Define port
+const PORT = process.env.PORT || 5000;
+
+// Ensure uploads directory exists
+fileManager.ensureDirectoryExists('uploads');
+
+// Schedule cleanup of uploaded files (every hour, files older than 1 hour)
+fileManager.scheduleFileCleanup('uploads', 60 * 60 * 1000, 60 * 60 * 1000);
+
+// Middleware
+app.use(helmet()); // Security headers
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 
-const PORT = 3000;
-let history = [];
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/role', roleRoutes);
+app.use('/api', trustyRoutes); // Keeping original path for backward compatibility
+app.use('/api/chat', chatRoutes);
+app.use('/api/lesson-plans', lessonPlanRoutes);
 
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
-
-// Image analysis using OpenRouter API
-async function analyzeImage(imageUrl) {
-  try {
-    // Get the image file path from URL
-    const imagePath = path.join(__dirname, imageUrl.replace(`http://localhost:${PORT}`, ''));
-    
-    // Read the image file and convert to base64
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
-    
-    // Call OpenRouter API for image analysis
-    const response = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        model: "meta-llama/llama-4-maverick:free",
-        messages: [
-          {
-            role: "system",
-            content: "You are an AI assistant that helps students. Analyze images and provide useful information in a clear, engaging manner."
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Analyze this image and explain it in detail." },
-              { type: "image_url", image_url: { url: base64Image } }
-            ]
-          }
-        ]
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY || 'sk-or-v1-9a4a1c2f5f9a4c2f9a4a1c2f5f9a4c2f9a4a1c2f5f9a4c2f'}`,
-          'HTTP-Referer': `http://localhost:${PORT}`,
-          'X-Title': 'Student WebMind',
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    return response.data.choices[0].message.content;
-  } catch (error) {
-    console.error("Error with image handling:", error);
-    return "There was a problem analyzing the image. Please try again.";
-  }
-}
-
-// Enhanced chat endpoint with improved response formatting
-app.post('/chat', upload.single('image'), async (req, res) => {
-  const message = req.body.message;
-  let imageUrl = null;
-  let imageAnalysis = null;
-
-  if (req.file) {
-    imageUrl = `http://localhost:${PORT}/uploads/${req.file.filename}`;
-    imageAnalysis = await analyzeImage(imageUrl);
-  }
-
-  const userMessage = {
-    role: 'user',
-    content: message,
-    ...(imageUrl && { 
-      image: imageUrl,
-      imageAnalysis: imageAnalysis 
-    }),
-  };
-
-  history.push(userMessage);
-
-  try {
-    // Include image analysis in the message if available
-    const combinedMessage = imageUrl 
-      ? `${message}\n[Image Analysis: ${imageAnalysis}]`
-      : message;
-
-    const response = await axios.post(
-      'https://api.mistral.ai/v1/chat/completions',
-      {
-        model: 'mistral-small',
-        messages: history.map(({ role, content, image, imageAnalysis }) => ({
-          role,
-          content: image ? `${content}\n[Image Analysis: ${imageAnalysis}]` : content
-        })),
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.MISTRAL_API_KEY || 'h4fxd9juHwPuRpXoqh2pTzMSxzBl0Vzy'}`,
-          'Content-Type': 'application/json',
-        }
-      }
-    );
-
-    const assistantReply = response.data.choices[0].message.content;
-
-    history.push({ role: 'assistant', content: assistantReply });
-    res.json({ 
-      success: true,
-      reply: assistantReply, 
-      history,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('There was an error processing your request. Please try again later.');
-  }
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-
-// Get conversation history
-app.get('/history', (req, res) => {
-  res.json({ 
-    success: true,
-    history,
-    message: "Conversation history retrieved successfully"
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    error: `Not Found - ${req.originalUrl}`
   });
 });
 
-// Cleanup uploaded files periodically
-setInterval(() => {
-  const now = Date.now();
-  const oneHour = 60 * 60 * 1000;
-  fs.readdir('uploads/', (err, files) => {
-    if (err) return;
-    files.forEach(file => {
-      const filePath = path.join('uploads/', file);
-      const stat = fs.statSync(filePath);
-      if (now - stat.mtimeMs > oneHour) {
-        fs.unlinkSync(filePath);
-      }
-    });
-  });
-}, 60 * 60 * 1000);
+// Global error handler
+app.use(errorHandler);
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`✅ Student WebMind Server running successfully at http://localhost:${PORT}`);
-  console.log(`📝 API Endpoints available:`);
-  console.log(`   - POST /chat - Send messages and images`);
-  console.log(`   - GET /history - View conversation history`);
+  console.log("Server is running on port 5000")
+  // console.log(`✅ Server running at http://localhost:${PORT}`);
+  // console.log(`📝 API Documentation available at http://localhost:${PORT}/api-docs`);
+  // console.log('Available API endpoints:');
+  // console.log('  Authentication:');
+  // console.log('    - POST /api/auth/signup - Create a new user account');
+  // console.log('    - POST /api/auth/signin - Sign in to an existing account');
+  // console.log('    - POST /api/auth/signout - Sign out of current session');
+  // console.log('    - POST /api/auth/reset-password - Request password reset');
+  // console.log('    - POST /api/auth/update-password - Update password');
+  // console.log('    - POST /api/auth/google-signin - Sign in with Google');
+  // console.log('    - POST /api/auth/verify-pin - Verify security PIN');
+  // console.log('  Chat:');
+  // console.log('    - POST /api/chat/student - Send student chat message');
+  // console.log('    - GET /api/chat/student/history - Get student chat history');
+  // console.log('    - DELETE /api/chat/student/history - Clear student chat history');
+  // console.log('    - POST /api/chat/teacher - Send teacher chat message');
+  // console.log('    - GET /api/chat/teacher/history - Get teacher chat history');
+  // console.log('    - DELETE /api/chat/teacher/history - Clear teacher chat history');
+  // console.log('  Lesson Plans:');
+  // console.log('    - POST /api/lesson-plans - Create a new lesson plan');
+  // console.log('    - GET /api/lesson-plans/teacher/:teacherId - Get all lesson plans for a teacher');
+  // console.log('    - GET /api/lesson-plans/:planId - Get a specific lesson plan');
+  // console.log('    - PUT /api/lesson-plans/:planId - Update a lesson plan');
+  // console.log('    - DELETE /api/lesson-plans/:planId - Delete a lesson plan');
+  // console.log('    - POST /api/lesson-plans/generate - Generate a lesson plan with AI');
+
+  // console.log('  Admin:');
+  // console.log('    - GET /api/trusty/gethods - Get all HODs');
+  // console.log('    - PUT /api/trusty/updatehod/:id - Update a HOD');
+  // console.log('    - DELETE /api/trusty/deletehod/:id - Delete a HOD');
+  // console.log('    - GET /api/trusty/getstudents - Get all students');
+  // console.log('    - PUT /api/trusty/updatestudent/:id - Update a student');
+  // console.log('    - DELETE /api/trusty/deletestudent/:id - Delete a student');
+  // console.log('    - GET /api/trusty/getteachers - Get all teachers');
+  // console.log('    - PUT /api/trusty/updateteacher/:id - Update a teacher');
+  // console.log('    - DELETE /api/trusty/deleteteacher/:id - Delete a teacher');
+  // console.log('    - GET /api/trusty/getadmins - Get all admins');
+  // console.log('    - PUT /api/trusty/updateadmin/:id - Update an admin');
+  // console.log('    - DELETE /api/trusty/deleteadmin/:id - Delete an admin');
 });

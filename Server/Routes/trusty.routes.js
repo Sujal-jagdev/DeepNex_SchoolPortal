@@ -12,7 +12,8 @@ const {
   DELETE_TEACHER,
   GET_ADMINS,
   UPDATE_ADMIN,
-  DELETE_ADMIN
+  DELETE_ADMIN,
+  GET_DEPARTMENTS
 } = require('../Controllers/trusty.Controller');
 
 // HOD routes
@@ -34,5 +35,8 @@ AdminRouter.delete("/trusty/deleteteacher/:id", DELETE_TEACHER);
 AdminRouter.get("/trusty/getadmins", GET_ADMINS);
 AdminRouter.put("/trusty/updateadmin/:id", UPDATE_ADMIN);
 AdminRouter.delete("/trusty/deleteadmin/:id", DELETE_ADMIN);
+
+// Department routes
+AdminRouter.get("/trusty/getdepartments", GET_DEPARTMENTS);
 
 module.exports = AdminRouter;

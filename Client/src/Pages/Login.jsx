@@ -1,1136 +1,393 @@
-import React, { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  Shield,
-  UserCircle,
-  ArrowRight,
-  Key,
-  BookOpen,
-  GraduationCap,
-  UserCog,
-  AlertCircle,
-  Clock,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "../helper/supabaseClient";
-import { MyContext } from "../AllContext";
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { signIn, signInWithGoogle, resetPassword, checkUserRole } from '../services/supabaseClient';
 
-const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [message, setMessage] = useState({ text: "", type: "" });
-  const [loading, setLoading] = useState(false);
-  const [resetMode, setResetMode] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [lockoutTime, setLockoutTime] = useState(0);
-  const [role, setRole] = useState("teacher");
-  const [securityQuestions, setSecurityQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [questionMode, setQuestionMode] = useState(false);
+const Login = ({ onLogin }) => {
   const navigate = useNavigate();
-  const { role: userRole, setrole } = useContext(MyContext);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [animateForm, setAnimateForm] = useState(false);
 
-  const checkEmailExists = async (email) => {
-    try {
-      const tables = ['student', 'teacher', 'hod', 'admin'];
-
-      for (const table of tables) {
-        const { data, error } = await supabase
-          .from(table)
-          .select('email')
-          .eq('email', email)
-          .single();
-
-        if (data) return table; // Return the table name where the email exists
-        console.log(data);
-
-        if (error && error.code !== 'PGRST116') throw error;
-      }
-
-      return false; // Email doesn't exist in any role table
-    } catch (error) {
-      console.error("Email check error:", error);
-      throw error;
-    }
-  };
-
-  // Role configurations with colors and icons
-  const rolesConfig = {
-    student: {
-      icon: <BookOpen className="w-5 h-5" />,
-      color: "indigo",
-      bgGradient: "from-indigo-500 to-indigo-700",
-      questions: [
-        "What was the name of your first pet?",
-        "What elementary school did you attend?",
-        "What was your childhood nickname?",
-      ],
-    },
-    teacher: {
-      icon: <GraduationCap className="w-5 h-5" />,
-      color: "blue",
-      bgGradient: "from-blue-500 to-blue-700",
-      questions: [
-        "What subject do you teach?",
-        "What year did you start teaching?",
-        "What's your employee ID?",
-      ],
-    },
-    hod: {
-      icon: <UserCog className="w-5 h-5" />,
-      color: "purple",
-      bgGradient: "from-purple-500 to-purple-700",
-      questions: [
-        "What department do you head?",
-        "What's your authorization code?",
-        "When was your department established?",
-      ],
-    },
-    admin: {
-      icon: <Shield className="w-5 h-5" />,
-      color: "red",
-      bgGradient: "from-red-500 to-red-700",
-      questions: [
-        "What's your admin security code?",
-        "Who is your direct supervisor?",
-        "What's the last 4 digits of your admin ID?",
-      ],
-    },
-  };
-
-  // Check for lockout timer
+  // Add animation effect when component mounts
   useEffect(() => {
-    if (lockoutTime > 0) {
-      const timer = setInterval(() => {
-        setLockoutTime((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    }
-  }, [lockoutTime]);
-
-  // Handle role selection
-  const handleRoleChange = (selectedRole) => {
-    setRole(selectedRole);
-    const shuffled = [...rolesConfig[selectedRole].questions].sort(
-      () => 0.5 - Math.random()
-    );
-    setSecurityQuestions(shuffled.slice(0, 2));
-    setAnswers({});
-  };
-
-  // Handle answer input
-  const handleAnswerChange = (question, value) => {
-    setAnswers((prev) => ({ ...prev, [question]: value }));
-  };
-
-  // Verify security questions
-  const verifyQuestions = async () => {
-    for (const question of securityQuestions) {
-      if (!answers[question] || answers[question].trim() === "") {
-        setMessage({
-          text: "Please answer all security questions",
-          type: "error",
-        });
-        return false;
-      }
-    }
-    return true;
-  };
-
-  // Main login handler
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage({ text: "", type: "" });
-
-    // Handle account lockout
-    if (lockoutTime > 0) {
-      setMessage({
-        text: `Account temporarily locked. Try again in ${lockoutTime} seconds.`,
-        type: "error",
-      });
-      return;
-    }
-
-    // Google Auth flow with security questions
-    if (googleAuthMode && questionMode) {
-      try {
-        setLoading(true);
-        const verified = await verifyQuestions();
-        if (!verified) return;
-
-        const userTable = role.toLowerCase();
-
-        // TEACHER APPROVAL CHECK (Regular Login)
-        if (role === 'teacher') {
-          // First check if teacher exists and is active
-          const { data: teacherData, error: teacherError } = await supabase
-            .from('teacher')
-            .select('status, approved_at')
-            .eq('email', email)
-            .single();
-
-          if (teacherError && teacherError.code !== 'PGRST116') throw teacherError;
-
-          // If active teacher exists, allow login
-          if (teacherData?.status === 'active') {
-            // Proceed with login
-          }
-          // If no teacher record or not active, check approvals
-          else {
-            const { data: approvalData, error: approvalError } = await supabase
-              .from('teacher_approvals')
-              .select('status, rejection_reason, decided_at')
-              .eq('teacher_email', email)
-              .single();
-
-            if (approvalError && approvalError.code !== 'PGRST116') throw approvalError;
-
-            // Handle approval status cases
-            if (approvalData) {
-              switch (approvalData.status) {
-                case 'rejected':
-                  await supabase.auth.signOut();
-                  throw new Error(
-                    `Application rejected. Reason: ${approvalData.rejection_reason || 'Not specified'}`
-                  );
-
-                case 'pending':
-                  await supabase.auth.signOut();
-                  throw new Error('Your application is pending approval');
-
-                case 'approved':
-                  // If approved but not in teacher table, add them
-                  const { error: insertError } = await supabase
-                    .from('teacher')
-                    .upsert({
-                      email: email,
-                      status: 'active',
-                      approved_at: new Date().toISOString(),
-                      // Add other required fields
-                      fullname: data.user.user_metadata?.full_name || '',
-                      avatar_url: data.user.user_metadata?.avatar_url || ''
-                    });
-
-                  if (insertError) throw insertError;
-                  break;
-
-                default:
-                  await supabase.auth.signOut();
-                  throw new Error('Invalid application status');
-              }
-            } else {
-              // No record in either table
-              await supabase.auth.signOut();
-              throw new Error('No teacher account found for this email');
-            }
-          }
-        }
-
-        // Rest of your Google Auth flow...
-        // [Keep existing Google Auth code here]
-
-      } catch (error) {
-        console.error("Google Auth error:", error);
-        setMessage({
-          text: error.message,
-          type: "error",
-        });
-        await supabase.auth.signOut(); // Ensure user is logged out if approval fails
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    // Regular email/password login
-    if (!email || (!password && !questionMode)) {
-      setMessage({
-        text: "Please enter all required fields.",
-        type: "error",
-      });
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Security questions verification
-      if (questionMode && !googleAuthMode) {
-        const verified = await verifyQuestions();
-        if (!verified) return;
-      }
-
-      // Supabase authentication
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-      if (!data?.user) throw new Error("Login failed. Please try again.");
-
-      // Email confirmation check
-      if (!data.user.email_confirmed_at) {
-        await supabase.auth.signOut();
-        throw new Error("Please confirm your email before logging in.");
-      }
-
-      // TEACHER APPROVAL CHECK (Regular Login)
-      if (role === 'teacher') {
-
-        // await supabase.
-        // First check teacher_approvals table
-        const { data: approvalData, error: approvalError } = await supabase
-          .from('teacher_approvals')
-          .select('status, rejection_reason, decided_at')
-          .eq('teacher_email', email)
-          .single();
-
-        if (approvalError) {
-          if (approvalError.code === 'PGRST116') { // No rows found
-            throw new Error('No teacher application found for this email.');
-          }
-          throw approvalError;
-        }
-
-        // Handle different approval states
-        switch (approvalData.status) {
-          case 'rejected':
-            await supabase.auth.signOut();
-            throw new Error(
-              `Application rejected on ${new Date(approvalData.decided_at).toLocaleDateString()}. ` +
-              `Reason: ${approvalData.rejection_reason || 'Not specified'}`
-            );
-
-          case 'pending':
-            await supabase.auth.signOut();
-            throw new Error('Your application is still under review.');
-
-          case 'approved':
-            // Additional check against teacher table
-            const { data: teacherData, error: teacherError } = await supabase
-              .from('teacher')
-              .select('status')
-              .eq('email', email)
-              .single();
-
-            if (teacherError && teacherError.code !== 'PGRST116') {
-              throw teacherError;
-            }
-
-            // If teacher record exists but status isn't active
-            if (teacherData && teacherData.status !== 'active') {
-              // Auto-activate if approved in teacher_approvals
-              const { error: updateError } = await supabase
-                .from('teacher')
-                .update({ status: 'active' })
-                .eq('email', email);
-
-              if (updateError) throw updateError;
-            }
-            break;
-
-          default:
-            await supabase.auth.signOut();
-            throw new Error('Invalid application status.');
-        }
-      }
-
-      // Successful login navigation
-      const redirectPath = role === 'student' ? '/student-profile' : '/dashboard';
-      navigate(redirectPath);
-      setAttempts(0); // Reset failed attempts
-
-    } catch (error) {
-      console.error("Login error:", error);
-
-      // Update failed attempts
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-
-      // Handle account lockout
-      if (newAttempts >= 5) {
-        setLockoutTime(30);
-        setMessage({
-          text: "Too many failed attempts. Account locked for 30 seconds.",
-          type: "error",
-        });
-      } else {
-        setMessage({
-          text: error.message,
-          type: "error",
-        });
-      }
-
-      // Trigger security questions after 3 attempts
-      if (newAttempts >= 3 && !questionMode) {
-        setQuestionMode(true);
-        setMessage({
-          text: "Please answer security questions for additional verification.",
-          type: "info",
-        });
-      }
-
-      // Clear password field
-      setPassword("");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // State for Google auth flow
-  const [googleAuthMode, setGoogleAuthMode] = useState(false);
-  const [googleUser, setGoogleUser] = useState(null);
-
-  // Handle Google login
-  const handleGoogleLogin = async () => {
-    try {
-      // Validate role selection first
-      if (!role) {
-        setMessage({
-          text: "Please select a role before signing in with Google",
-          type: "error",
-        });
-        return;
-      }
-
-      setGoogleLoading(true);
-
-      // Get the current origin (handles both dev and production)
-      const currentOrigin = window.location.origin;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${currentOrigin}/login`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      // Store the selected role in sessionStorage (more secure than localStorage)
-      sessionStorage.setItem('preSelectedRole', role);
-
-    } catch (error) {
-      console.error("Google sign-in error:", error);
-      setMessage({
-        text: error?.message || "Google sign-in failed",
-        type: "error",
-      });
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  // Check for Google auth redirect
-  useEffect(() => {
-
-    const checkGoogleAuth = async () => {
-      try {
-        // Check if we have a session after OAuth redirect
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) throw sessionError;
-        if (!session?.user) return;
-
-        // Get the pre-selected role from sessionStorage
-        const preSelectedRole = sessionStorage.getItem('preSelectedRole') || 'student';
-        setRole(preSelectedRole);
-        sessionStorage.removeItem('preSelectedRole');
-
-        // Step 1: Check if user exists in the selected role table
-        const { data: existingUserInRole, error: roleCheckError } = await supabase
-          .from(preSelectedRole)
-          .select('*')
-          .eq('email', session.user.email)
-          .single();
-
-        // If user exists in selected role, redirect to their dashboard
-        if (existingUserInRole && !roleCheckError) {
-          console.log(`User exists as ${preSelectedRole}, redirecting to dashboard`);
-          if (setrole) setrole(preSelectedRole);
-          navigate(preSelectedRole === 'student' ? '/student-profile' : '/dashboard');
-          return;
-        }
-
-        // Step 2: Special handling for teachers (approval process)
-        if (preSelectedRole === 'teacher') {
-          try {
-            const { data: approvalData, error: approvalError } = await supabase
-              .from('teacher_approvals')
-              .select('status, rejection_reason, decided_at')
-              .eq('teacher_email', session.user.email)
-              .single();
-
-            if (approvalError) {
-              if (approvalError.code === 'PGRST116') { // No approval record found
-                // New teacher sign-up via Google - redirect to profile completion
-                console.log('New teacher signup, redirecting to profile completion');
-                navigate('/profile-completion');
-                return;
-              } else {
-                throw approvalError;
-              }
-            }
-
-            // Handle existing approval status
-            if (approvalData.status !== 'approved') {
-              await supabase.auth.signOut();
-              setMessage({
-                text: approvalData.status === 'pending'
-                  ? 'Your application is pending approval'
-                  : `Application rejected. Reason: ${approvalData.rejection_reason || 'Not specified'}`,
-                type: 'error'
-              });
-              return;
-            }
-
-            // Teacher is approved but may not have a record in teacher table
-            const { data: teacherData, error: teacherError } = await supabase
-              .from('teacher')
-              .select('status')
-              .eq('email', session.user.email)
-              .single();
-
-            if (teacherError && teacherError.code !== 'PGRST116') throw teacherError;
-
-            // Create teacher record if approved but doesn't exist
-            if (!teacherData) {
-              const { error: insertError } = await supabase
-                .from('teacher')
-                .insert({
-                  email: session.user.email,
-                  fullname: session.user.user_metadata?.full_name || 'New Teacher',
-                  avatar_url: session.user.user_metadata?.avatar_url || '',
-                  status: 'active',
-                  approved_at: new Date().toISOString()
-                });
-
-              if (insertError) throw insertError;
-
-              // Now redirect to dashboard since we've created their account
-              if (setrole) setrole('teacher');
-              navigate('/dashboard');
-              return;
-            }
-
-            // Existing teacher with active record
-            if (setrole) setrole('teacher');
-            navigate('/dashboard');
-            return;
-          } catch (error) {
-            console.error("Teacher approval check error:", error);
-            setMessage({
-              text: error.message,
-              type: "error"
-            });
-            await supabase.auth.signOut();
-            return;
-          }
-        }
-
-        // Step 3: Check if user exists in any role table
-        const allRoles = ['student', 'teacher', 'hod', 'admin'];
-        let existingRole = null;
-
-        for (const roleType of allRoles) {
-          const { data, error } = await supabase
-            .from(roleType)
-            .select('*')
-            .eq('email', session.user.email)
-            .single();
-
-          if (data && !error) {
-            existingRole = roleType;
-            break;
-          }
-        }
-
-        // If user exists in any role, ask to switch or redirect
-        if (existingRole) {
-          if (existingRole !== preSelectedRole) {
-            const switchRole = window.confirm(
-              `You already have an account as ${existingRole}. Would you like to sign in as ${existingRole} instead?`
-            );
-
-            if (switchRole) {
-              if (setrole) setrole(existingRole);
-              navigate(existingRole === 'student' ? '/student-profile' : '/dashboard');
-              return;
-            } else {
-              // User wants to continue with the selected role but doesn't have an account for it
-              console.log('User exists with different role, redirecting to profile completion');
-              navigate('/profile-completion');
-              return;
-            }
-          } else {
-            // They already exist with the selected role (shouldn't happen due to earlier check)
-            if (setrole) setrole(existingRole);
-            navigate(existingRole === 'student' ? '/student-profile' : '/dashboard');
-            return;
-          }
-        }
-
-        // Step 4: User doesn't exist in any role - redirect to profile completion
-        console.log('New user, redirecting to profile completion');
-        navigate('/profile-completion');
-      } catch (error) {
-        console.error("Google auth check error:", error);
-        setMessage({
-          text: error.message || "Authentication error",
-          type: "error"
-        });
-        await supabase.auth.signOut();
-      }
-    };
-
-    checkGoogleAuth();
+    setAnimateForm(true);
   }, []);
 
-  const handleResetPassword = async () => {
-    if (!email) {
-      setMessage({
-        text: "Please enter your email to reset the password.",
-        type: "error",
-      });
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Basic validation
+    if (!email || !password) {
+      setError('Please enter both email and password');
       return;
     }
-
+    
+    // Clear any previous errors
+    setError('');
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
-      });
-
-      if (error) throw error;
-      setMessage({
-        text: "Password reset email sent! Check your inbox.",
-        type: "success",
-      });
-    } catch (error) {
-      setMessage({
-        text: error?.message || "An error occurred.",
-        type: "error",
-      });
-    } finally {
+      // Sign in with Supabase
+      const { data, error: signInError } = await signIn(email, password);
+      
+      if (signInError) {
+        if (signInError.message.includes('Email not confirmed')) {
+          setError(
+            'Your email has not been verified yet. Please check your inbox and click the verification link. ' +
+            'If you did not receive the email, check your spam folder or try signing up again.'
+          );
+        } else {
+          setError('Login failed: ' + signInError.message);
+        }
+        setLoading(false);
+        return;
+      }
+      
+      if (data && data.user) {
+        const userId = data.user.id;
+        
+        // Store userId in localStorage
+        localStorage.setItem('userId', userId);
+        
+        // Check user role from database tables
+        const { userRole, userData, multipleRoles, availableRoles, teacherStatus, statusMessage } = await checkUserRole(userId);
+        
+        // Check if user has multiple roles
+        if (multipleRoles) {
+          setError(`Your email can be used to login with the following roles: ${availableRoles.join(', ')}. Please use only one role.`);
+          setLoading(false);
+          return;
+        }
+        
+        // Check if teacher status is pending or rejected
+        if (teacherStatus === 'pending' || teacherStatus === 'rejected') {
+          setError(statusMessage);
+          setLoading(false);
+          return;
+        }
+        
+        if (userRole) {
+          // Call the onLogin function passed from App.jsx
+          onLogin(userRole);
+          // Redirect to the appropriate dashboard
+          navigate(`/dashboard/${userRole}`);
+        } else {
+          // If no role found in any table, show error
+          setError('User role not found. Please contact administrator.');
+          setLoading(false);
+        }
+      } else {
+        setError('Login failed: User data not found');
+        setLoading(false);
+      }
+    } catch (err) {
+      setError('Login failed: ' + (err.message || 'Please try again'));
       setLoading(false);
     }
   };
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+  
+  // Handle Google Sign-In
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Call the signInWithGoogle function which initiates the OAuth flow
+      // This will redirect the user to Google's login page
+      const { error } = await signInWithGoogle();
+      
+      // If there's an error initiating the OAuth flow, display it
+      if (error) {
+        setError('Google sign-in failed: ' + error.message);
+        setLoading(false);
+        return;
+      }
+      
+      // If successful, the page will be redirected to Google's login
+      // The actual authentication handling will happen in the callback
+      
+      // Keep loading state true as we're about to redirect
+      // No need to set loading to false as we're leaving this page
+    } catch (err) {
+      setError('Google sign-in failed: ' + (err.message || 'Please try again'));
+      setLoading(false);
+    }
   };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 10,
-      },
-    },
-  };
-
-  const cardHover = {
-    scale: 1.03,
-    transition: { type: "spring", stiffness: 400, damping: 10 },
-  };
-
-  const cardTap = {
-    scale: 0.98,
+  
+  // Handle forgot password
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    
+    if (!resetEmail) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Use Supabase resetPassword function
+      const { error } = await resetPassword(resetEmail);
+      
+      if (error) {
+        setError('Failed to send reset email: ' + error.message);
+        setLoading(false);
+        return;
+      }
+      
+      setResetSuccess('Password reset instructions sent to your email!');
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to send reset email: ' + (err.message || 'Please try again'));
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Section - Information */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="space-y-8"
-          >
-            <motion.div variants={itemVariants} className="space-y-4">
-              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Welcome to EduPortal
-              </h1>
-              <p className="text-lg md:text-xl text-gray-600">
-                A unified platform for students, educators, and administrators.
-                Sign in to access your personalized dashboard.
+    <div className="min-h-screen py-12 flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 text-black">
+      <div className="w-full max-w-md px-4">
+        <div 
+          className={`bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-500 ${animateForm ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+        > 
+          <div className="bg-gradient-to-r from-primary to-indigo-600 py-6 px-6 relative">
+            <div className="absolute top-0 left-0 w-full h-full opacity-20">
+              {/* Abstract pattern overlay */}
+              <div className="absolute inset-0 bg-pattern-dots"></div>
+            </div>
+            <div className="flex flex-col items-center justify-center relative z-10">
+              <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-16 w-auto mb-4" />
+              <h2 className="text-2xl font-bold text-center text-white font-display">
+                Welcome to <span className="text-bright-green">EduNex</span>
+              </h2>
+              <p className="text-center text-blue-100 mt-2">
+                Sign in to access your account
               </p>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="space-y-6">
-              {Object.entries(rolesConfig).map(([roleKey, config]) => (
-                <motion.div
-                  key={roleKey}
-                  whileHover={cardHover}
-                  whileTap={cardTap}
-                  className={`bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 border-2 ${role === roleKey
-                    ? `border-${config.color}-300 shadow-lg`
-                    : "border-transparent"
-                    } cursor-pointer group`}
-                  onClick={() => handleRoleChange(roleKey)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`p-3 rounded-lg transition-all ${role === roleKey
-                        ? `bg-${config.color}-100 text-${config.color}-600`
-                        : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"
-                        }`}
-                    >
-                      {config.icon}
+            </div>
+          </div>
+          
+          <div className="p-8">
+            {!showForgotPassword ? (
+              // Login Form
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-4 animate-pulse">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p>{error}</p>
                     </div>
-                    <div>
-                      <h3
-                        className={`text-lg font-semibold capitalize ${role === roleKey
-                          ? `text-${config.color}-700`
-                          : "text-gray-800"
-                          }`}
-                      >
-                        {roleKey}
-                      </h3>
-                      <p className="text-gray-600 text-sm">
-                        {roleKey === "student"
-                          ? "Access learning materials and assignments"
-                          : roleKey === "teacher"
-                            ? "Manage courses and student progress"
-                            : roleKey === "hod"
-                              ? "Department oversight and analytics"
-                              : "System administration and management"}
-                      </p>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <label htmlFor="email" className="block text-gray-700 font-medium text-sm">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                      </svg>
                     </div>
-                    <ChevronRight
-                      className={`ml-auto h-5 w-5 ${role === roleKey
-                        ? `text-${config.color}-500`
-                        : "text-gray-400 group-hover:text-gray-600"
-                        }`}
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                      placeholder="Enter your email"
                     />
                   </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-
-          {/* Right Section - Login Form */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ type: "spring", stiffness: 100, damping: 10 }}
-            className="bg-white p-8 rounded-xl shadow-xl border border-gray-100 backdrop-blur-sm bg-opacity-90"
-          >
-            <div className="flex items-center gap-3 mb-8">
-              <div
-                className={`p-2 rounded-lg bg-${rolesConfig[role].color}-100 text-${rolesConfig[role].color}-600`}
-              >
-                <Key className="w-6 h-6" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {resetMode
-                  ? "Reset Password"
-                  : questionMode && googleAuthMode
-                    ? "Complete Your Profile"
-                    : questionMode
-                      ? "Security Verification"
-                      : "Sign In as " + role.charAt(0).toUpperCase() + role.slice(1)}
-              </h2>
-            </div>
-
-            <AnimatePresence>
-              {message.text && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className={`mb-6 p-4 rounded-lg border ${message.type === "error"
-                    ? "bg-red-50 border-red-200 text-red-600"
-                    : message.type === "success"
-                      ? "bg-green-50 border-green-200 text-green-600"
-                      : "bg-blue-50 border-blue-200 text-blue-600"
-                    }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="flex-shrink-0 h-5 w-5 mt-0.5" />
-                    <p>{message.text}</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {lockoutTime > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 flex items-center gap-3"
-              >
-                <Clock className="h-5 w-5" />
-                <div>
-                  <p className="font-medium">Account Temporarily Locked</p>
-                  <p className="text-sm">
-                    Please wait {lockoutTime} seconds before trying again.
-                  </p>
                 </div>
-              </motion.div>
-            )}
-
-            <form
-              onSubmit={
-                resetMode
-                  ? (e) => {
-                    e.preventDefault();
-                    handleResetPassword();
-                  }
-                  : handleSubmit
-              }
-              className="space-y-6"
-            >
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.1 }}
-              >
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all hover:border-gray-400"
-                    placeholder="your@email.com"
-                    required
-                  />
-                </div>
-              </motion.div>
-
-              {!resetMode && !questionMode && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
+                
+                <div className="space-y-2">
+                  <label htmlFor="password" className="block text-gray-700 font-medium text-sm">
                     Password
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Lock className="h-5 w-5 text-gray-400" />
+                      <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
                     </div>
                     <input
+                      type="password"
                       id="password"
-                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full pl-10 pr-10 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all hover:border-gray-400"
-                      placeholder="••••••••"
-                      required
+                      className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-black"
+                      placeholder="Enter your password"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500 transition-colors" />
-                      ) : (
-                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-500 transition-colors" />
-                      )}
-                    </button>
                   </div>
-                  <div className="flex justify-between mt-2">
-                    <div className="text-sm text-gray-500">
-                      Attempts: {attempts}/5
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setResetMode(true)}
-                      className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {questionMode && !resetMode && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="space-y-4"
-                >
-                  {googleAuthMode && googleUser && (
-                    <div className={`flex items-center gap-3 p-4 rounded-lg border-2 border-${rolesConfig[role].color}-200 bg-${rolesConfig[role].color}-50 mb-4`}>
-                      <div className="flex items-center gap-3">
-                        {googleUser.user_metadata?.avatar_url ? (
-                          <img
-                            src={googleUser.user_metadata.avatar_url}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full border-2 border-white shadow-md"
-                          />
-                        ) : (
-                          <UserCircle className="w-12 h-12 text-gray-400" />
-                        )}
-                        <div>
-                          <p className="font-medium text-gray-800">
-                            {googleUser.user_metadata?.full_name || googleUser.email}
-                          </p>
-                          <p className="text-xs text-gray-500">{googleUser.email}</p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <div className={`p-1 rounded-full bg-${rolesConfig[role].color}-200`}>
-                              {rolesConfig[role].icon}
-                            </div>
-                            <span className={`text-xs font-medium text-${rolesConfig[role].color}-700 capitalize`}>{role}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mb-4">
-                    <h3 className="font-medium text-gray-800 mb-1">
-                      {googleAuthMode
-                        ? `Complete Your ${role.charAt(0).toUpperCase() + role.slice(1)} Profile`
-                        : "Security Verification"}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {googleAuthMode
-                        ? `Please answer these security questions to set up your account. These will help verify your identity in the future.`
-                        : "Please answer these security questions to verify your identity:"}
-                    </p>
-                  </div>
-
-                  {securityQuestions.map((question, index) => (
-                    <div key={index} className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Question {index + 1}: {question} <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={answers[question] || ""}
-                        onChange={(e) =>
-                          handleAnswerChange(question, e.target.value)
-                        }
-                        className={`block w-full px-4 py-3 rounded-lg border ${!answers[question] ? 'border-gray-300' : `border-${rolesConfig[role].color}-300`} focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all hover:border-gray-400`}
-                        placeholder="Your answer..."
-                        required
-                      />
-                    </div>
-                  ))}
-
-                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg mb-2">
-                    <p className="text-xs text-blue-700">
-                      <strong>Note:</strong> Your answers will be securely stored and used for account recovery. Please remember them.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-              >
+                </div>
+                
                 <button
                   type="submit"
-                  className={`w-full py-3.5 rounded-lg font-semibold text-white ${loading || lockoutTime > 0
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : `bg-gradient-to-r ${rolesConfig[role].bgGradient} hover:opacity-90`
-                    } transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2`}
-                  disabled={loading || lockoutTime > 0}
+                  className="w-full bg-gradient-to-r from-primary to-indigo-600 text-white py-3 rounded-lg font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
+                  disabled={loading}
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      {resetMode
-                        ? "Processing..."
-                        : questionMode && googleAuthMode
-                          ? "Saving Profile..."
-                          : questionMode
-                            ? "Verifying..."
-                            : "Signing in..."}
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Signing in...
                     </>
                   ) : (
-                    <>
-                      {resetMode
-                        ? "Send Reset Link"
-                        : questionMode && googleAuthMode
-                          ? "Complete Profile"
-                          : questionMode
-                            ? "Verify Identity"
-                            : "Sign In"}
-                      <ArrowRight className="w-5 h-5" />
-                    </>
+                    'Sign In'
                   )}
                 </button>
-              </motion.div>
-
-              {!resetMode && !questionMode && (
-                <>
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">
-                        Or continue with
-                      </span>
-                    </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <label htmlFor="remember-me" className="ml-2 block text-gray-600">
+                      Remember me
+                    </label>
                   </div>
-
-                  <div className="space-y-4">
-                    {/* Role selection reminder */}
-                    <div className={`p-3 rounded-lg border-2 border-${rolesConfig[role].color}-200 bg-${rolesConfig[role].color}-50`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full bg-${rolesConfig[role].color}-100`}>
-                          {rolesConfig[role].icon}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-800">Signing in as <span className={`font-bold text-${rolesConfig[role].color}-600 capitalize`}>{role}</span></p>
-                          <p className="text-xs text-gray-500">You can change your role by clicking on the options above</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <motion.button
-                      type="button"
-                      onClick={handleGoogleLogin}
-                      disabled={googleLoading}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`w-full flex items-center justify-center gap-2 py-3 px-4 border border-${rolesConfig[role].color}-200 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-${rolesConfig[role].color}-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${rolesConfig[role].color}-500 transition-all`}
+                  <div>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-primary hover:text-indigo-700 font-medium transition-colors duration-200"
                     >
-                      {googleLoading ? (
-                        <Loader2 className={`h-5 w-5 animate-spin text-${rolesConfig[role].color}-500`} />
-                      ) : (
-                        <>
-                          <FcGoogle className="h-5 w-5" />
-                          <span>Sign in with Google as <span className={`font-semibold text-${rolesConfig[role].color}-600 capitalize`}>{role}</span></span>
-                        </>
-                      )}
-                    </motion.button>
+                      Forgot Password?
+                    </button>
                   </div>
-                </>
-              )}
-            </form>
-
-            {resetMode ? (
-              <button
-                type="button"
-                onClick={() => setResetMode(false)}
-                className="w-full mt-4 text-center text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
-              >
-                Back to Sign In
-              </button>
-            ) : questionMode && googleAuthMode ? (
-              <button
-                type="button"
-                onClick={async () => {
-                  // Sign out the user if they cancel Google auth flow
-                  await supabase.auth.signOut();
-                  setGoogleAuthMode(false);
-                  setQuestionMode(false);
-                  setGoogleUser(null);
-                  setMessage({ text: "", type: "" });
-                }}
-                className="w-full mt-4 text-center text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
-              >
-                Cancel and Sign Out
-              </button>
-            ) : questionMode ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuestionMode(false);
-                  setMessage({ text: "", type: "" });
-                }}
-                className="w-full mt-4 text-center text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
-              >
-                Back to Password Login
-              </button>
+                </div>
+                
+                <div className="mt-6 relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    className="w-full flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-all duration-200"
+                  >
+                    <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                      <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
+                        <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z" />
+                        <path fill="#34A853" d="M -14.754 63.239 C -11.514 63.239 -8.804 62.159 -6.824 60.329 L -10.684 57.329 C -11.764 58.049 -13.134 58.489 -14.754 58.489 C -17.884 58.489 -20.534 56.379 -21.484 53.529 L -25.464 53.529 L -25.464 56.619 C -23.494 60.539 -19.444 63.239 -14.754 63.239 Z" />
+                        <path fill="#FBBC05" d="M -21.484 53.529 C -21.734 52.809 -21.864 52.039 -21.864 51.239 C -21.864 50.439 -21.724 49.669 -21.484 48.949 L -21.484 45.859 L -25.464 45.859 C -26.284 47.479 -26.754 49.299 -26.754 51.239 C -26.754 53.179 -26.284 54.999 -25.464 56.619 L -21.484 53.529 Z" />
+                        <path fill="#EA4335" d="M -14.754 43.989 C -12.984 43.989 -11.404 44.599 -10.154 45.789 L -6.734 42.369 C -8.804 40.429 -11.514 39.239 -14.754 39.239 C -19.444 39.239 -23.494 41.939 -25.464 45.859 L -21.484 48.949 C -20.534 46.099 -17.884 43.989 -14.754 43.989 Z" />
+                      </g>
+                    </svg>
+                    Sign in with Google
+                  </button>
+                </div>
+                
+                <div className="mt-6 text-center">
+                  <p className="text-gray-600 text-sm">
+                    Don't have an account? <Link to="/signup" className="text-primary hover:text-indigo-700 font-medium transition-colors duration-200">Sign up</Link>
+                  </p>
+                </div>
+              </form>
             ) : (
-              <p className="mt-6 text-center text-sm text-gray-600">
-                Don't have an account?{" "}
-                <a
-                  href="/signup"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+              // Forgot Password Form
+              <form onSubmit={handleForgotPassword} className="space-y-6">
+                {error && (
+                  <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-4 animate-pulse">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p>{error}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {resetSuccess && (
+                  <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md mb-4 animate-pulse">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <p>{resetSuccess}</p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="space-y-2">
+                  <label htmlFor="resetEmail" className="block text-gray-700 font-medium text-sm">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="email"
+                      id="resetEmail"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-black"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-primary to-indigo-600 text-white py-3 rounded-lg font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
+                  disabled={loading}
                 >
-                  Create one now
-                </a>
-              </p>
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Instructions'
+                  )}
+                </button>
+                
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetEmail('');
+                      setResetSuccess('');
+                      setError('');
+                    }}
+                    className="text-primary hover:text-indigo-700 font-medium transition-colors duration-200"
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              </form>
             )}
-          </motion.div>
+          </div>
         </div>
       </div>
-
-      {/* Add some global styles for animations */}
-      <style jsx global>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 };
