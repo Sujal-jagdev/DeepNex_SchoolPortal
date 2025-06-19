@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { signUp, insertUserData, verifySecurityPin, checkEmailExists } from '../services/supabaseClient';
+import logo2 from '../assets/logo2.png';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -912,7 +913,7 @@ const Signup = () => {
         <div className={`max-w-2xl mx-auto bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden transform transition-all duration-500 ease-in-out ${animateForm ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-6">
             <div className="flex flex-col items-center justify-center">
-              <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-16 w-auto mb-4" />
+              <img src={logo2} alt="EduNex Logo" className="h-16 w-auto mb-4" />
               <h2 className="text-2xl font-bold text-center text-white font-display">
                 {!selectedRole ? 'Sign Up for ' : `Register as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} on `}
                 <span className="text-bright-green">EduNex</span>

@@ -1,3 +1,5 @@
+import logo2 from '../assets/logo2.png';
+
 const About = () => {
   // Mock team data
   const teamMembers = [
@@ -37,7 +39,7 @@ const About = () => {
         {/* About Section */}
         <section className="mb-16">
           <div className="flex flex-col items-center justify-center mb-8">
-            <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-20 w-auto mb-4" />
+            <img src={logo2} alt="EduNex Logo" className="h-20 w-auto mb-4" />
             <h1 className="text-3xl md:text-4xl font-bold text-center font-display">About <span className="text-bright-green">EduNex</span></h1>
           </div>
           

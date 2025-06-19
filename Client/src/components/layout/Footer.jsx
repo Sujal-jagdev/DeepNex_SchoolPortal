@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaTwitter, FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
+import logo2 from '../../assets/logo2.png';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -11,7 +12,7 @@ const Footer = () => {
           {/* Logo and Description */}
           <div className="md:col-span-1">
             <Link to="/" className="flex items-center">
-              <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-10 w-auto mr-2" />
+              <img src={logo2} alt="EduNex Logo" className="h-10 w-auto mr-2" />
               <span className="text-2xl font-bold text-white font-display">Edu<span className="text-bright-green">Nex</span></span>
             </Link>
             <p className="mt-4 text-gray-300 font-body">

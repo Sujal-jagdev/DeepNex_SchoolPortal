@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signIn, signInWithGoogle, resetPassword, checkUserRole } from '../services/supabaseClient';
+import logo2 from '../assets/logo2.png';
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -162,7 +163,7 @@ const Login = ({ onLogin }) => {
               <div className="absolute inset-0 bg-pattern-dots"></div>
             </div>
             <div className="flex flex-col items-center justify-center relative z-10">
-              <img src="/src/assets/logo2.png" alt="EduNex Logo" className="h-16 w-auto mb-4" />
+              <img src={logo2} alt="EduNex Logo" className="h-16 w-auto mb-4" />
               <h2 className="text-2xl font-bold text-center text-white font-display">
                 Welcome to <span className="text-bright-green">EduNex</span>
               </h2>
