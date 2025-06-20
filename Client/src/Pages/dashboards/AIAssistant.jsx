@@ -21,6 +21,9 @@ const AIAssistant = () => {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [isLoadingSessions, setIsLoadingSessions] = useState(false);
 
+  // State for mobile sidebar toggle
+  const [showSidebar, setShowSidebar] = useState(false);
+
   // Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,6 +38,13 @@ const AIAssistant = () => {
     fetchChatSessions();
   }, []);
   
+  // Close sidebar when message is sent on mobile
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
+  }, [messages]);
+  
   // Fetch chat sessions from the server
   const fetchChatSessions = async () => {
     try {
@@ -47,7 +57,7 @@ const AIAssistant = () => {
         return;
       }
       
-      const response = await axios.get(`http://localhost:5000/api/chat/student/history?userId=${userId}`);
+      const response = await axios.get(`https://api.edunex.deepnex.in/api/chat/student/history?userId=${userId}`);
       
       if (response.data.success && response.data.sessions) {
         setChatSessions(response.data.sessions);
@@ -63,7 +73,7 @@ const AIAssistant = () => {
   const loadChatHistory = async (sessionId) => {
     try {
       setIsTyping(true);
-      const response = await axios.get(`http://localhost:5000/api/chat/student/history?sessionId=${sessionId}`);
+      const response = await axios.get(`https://api.edunex.deepnex.in/api/chat/student/history?sessionId=${sessionId}`);
       
       if (response.data.success && response.data.history) {
         // Convert the chat history to our message format
@@ -76,6 +86,11 @@ const AIAssistant = () => {
         
         setMessages(formattedMessages);
         setCurrentSessionId(sessionId);
+        
+        // Close sidebar on mobile after selecting a chat
+        if (window.innerWidth < 768) {
+          setShowSidebar(false);
+        }
       }
     } catch (error) {
       console.error('Error loading chat history:', error);
@@ -109,7 +124,7 @@ const AIAssistant = () => {
       const userId = localStorage.getItem('userId');
       
       // Call backend API with userId and sessionId if available
-      const response = await axios.post('http://localhost:5000/api/chat/student', {
+      const response = await axios.post('https://api.edunex.deepnex.in/api/chat/student', {
         message: newMessage,
         userId: userId,
         sessionId: currentSessionId
@@ -165,31 +180,63 @@ const AIAssistant = () => {
       },
     ]);
     setCurrentSessionId(null);
+    
+    // Close sidebar on mobile after starting a new chat
+    if (window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
+  };
+
+  // Toggle sidebar visibility for mobile
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
   };
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <div className="bg-blue-600 bg-opacity-95 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden p-2 rounded-md hover:bg-blue-700 transition-colors"
+              onClick={toggleSidebar}
+              aria-label="Toggle sidebar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v2.8a2.25 2.25 0 01-1.5 2.25m0 0a4.5 4.5 0 01-1.5.25m-4.5-9.5a4.5 4.5 0 001.423-.25m4.5 9.5a4.5 4.5 0 001.423-.25m0-9.5a4.5 4.5 0 00-1.423-.25m0 0a4.5 4.5 0 01-4.5 0m0 0a4.5 4.5 0 00-1.423.25m0 0a4.5 4.5 0 01-4.5 0" />
               </svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold">AI Learning Assistant</h1>
-              <p className="text-sm text-white text-opacity-80">Your personal academic companion</p>
+              <h1 className="text-xl md:text-2xl font-bold">AI Learning Assistant</h1>
+              <p className="text-xs md:text-sm text-white text-opacity-80">Your personal academic companion</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main content area with two columns */}
-      <div className="flex-grow flex overflow-hidden">
+      <div className="flex-grow flex overflow-hidden relative">
+        {/* Mobile sidebar overlay */}
+        {showSidebar && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+            onClick={toggleSidebar}
+            aria-hidden="true"
+          ></div>
+        )}
+        
         {/* Sidebar with chat history */}
-        <div className="w-80 min-w-[320px] p-4 border-r border-gray-200 bg-white overflow-y-auto flex-shrink-0">
+        <div 
+          className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-20 w-[85%] max-w-[320px] md:w-80 md:min-w-[280px] h-[calc(100vh-64px)] md:h-auto p-4 border-r border-gray-200 bg-white overflow-y-auto flex-shrink-0 transition-transform duration-300 ease-in-out`}
+        >
           <div className="space-y-4">
             {/* New Chat button */}
             <button 
@@ -263,41 +310,41 @@ const AIAssistant = () => {
         </div>
         
         {/* Main chat area */}
-        <div className="flex-grow flex flex-col overflow-hidden p-4">
+        <div className="flex-grow flex flex-col overflow-hidden p-2 md:p-4">
           <div className="flex-grow bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col">
             {/* Chat messages */}
-            <div className="flex-grow overflow-y-auto p-6 bg-gray-50">
+            <div className="flex-grow overflow-y-auto p-3 md:p-6 bg-gray-50">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-center p-8 rounded-lg bg-white shadow-sm border border-gray-200 max-w-md">
-                    <div className="w-16 h-16 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="text-center p-4 md:p-8 rounded-lg bg-white shadow-sm border border-gray-200 max-w-md mx-2">
+                    <div className="w-12 h-12 md:w-16 md:h-16 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Start a Conversation</h3>
-                    <p className="text-gray-600">Ask me anything about your studies, homework, or academic concepts you'd like to understand better.</p>
+                    <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Start a Conversation</h3>
+                    <p className="text-sm text-gray-600">Ask me anything about your studies, homework, or academic concepts you'd like to understand better.</p>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-6">
+                <div className="space-y-4 md:space-y-6">
                   {messages.map((message) => (
                     <div 
                       key={message.id} 
                       className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
                     >
                       {message.sender === 'ai' && (
-                        <div className="w-8 h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
                           <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v2.8a2.25 2.25 0 01-1.5 2.25m0 0a4.5 4.5 0 01-1.5.25m-4.5-9.5a4.5 4.5 0 001.423-.25m4.5 9.5a4.5 4.5 0 001.423-.25m0-9.5a4.5 4.5 0 00-1.423-.25m0 0a4.5 4.5 0 01-4.5 0m0 0a4.5 4.5 0 00-1.423.25m0 0a4.5 4.5 0 01-4.5 0" />
                             </svg>
                           </div>
                         </div>
                       )}
-                      <div className="max-w-[75%] overflow-hidden break-words">
+                      <div className="max-w-[80%] md:max-w-[75%] overflow-hidden break-words">
                         <div 
-                          className={`p-4 rounded-2xl shadow-sm ${message.sender === 'user' 
+                          className={`p-3 md:p-4 rounded-2xl shadow-sm ${message.sender === 'user' 
                             ? `bg-blue-600 text-white` 
                             : 'bg-white border border-gray-200'}`}
                         >
@@ -308,9 +355,9 @@ const AIAssistant = () => {
                         </div>
                       </div>
                       {message.sender === 'user' && (
-                        <div className="w-8 h-8 rounded-full overflow-hidden ml-2 flex-shrink-0">
+                        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden ml-2 flex-shrink-0">
                           <div className="w-full h-full bg-gray-300 flex items-center justify-center text-white">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                           </div>
@@ -320,15 +367,15 @@ const AIAssistant = () => {
                   ))}
                   {isTyping && (
                     <div className="flex justify-start animate-fadeIn">
-                      <div className="w-8 h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
                         <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v2.8a2.25 2.25 0 01-1.5 2.25m0 0a4.5 4.5 0 01-1.5.25m-4.5-9.5a4.5 4.5 0 001.423-.25m4.5 9.5a4.5 4.5 0 001.423-.25m0-9.5a4.5 4.5 0 00-1.423-.25m0 0a4.5 4.5 0 01-4.5 0m0 0a4.5 4.5 0 00-1.423.25m0 0a4.5 4.5 0 01-4.5 0" />
                           </svg>
                         </div>
                       </div>
-                      <div className="max-w-[75%] overflow-hidden break-words">
-                        <div className="p-4 rounded-2xl shadow-sm bg-white border border-gray-200">
+                      <div className="max-w-[80%] md:max-w-[75%] overflow-hidden break-words">
+                        <div className="p-3 md:p-4 rounded-2xl shadow-sm bg-white border border-gray-200">
                           <div className="flex space-x-2">
                             <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -344,14 +391,14 @@ const AIAssistant = () => {
             </div>
             
             {/* Message input */}
-            <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="p-3 md:p-4 border-t border-gray-200 bg-white">
               <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
                 <div className="relative flex-grow">
                   <textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Ask me anything about your studies..."
-                    className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all resize-none min-h-[50px] max-h-[120px] overflow-auto"
+                    className="w-full px-3 py-2 md:px-4 md:py-3 pr-10 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all resize-none min-h-[40px] md:min-h-[50px] max-h-[100px] md:max-h-[120px] overflow-auto text-sm md:text-base"
                     rows="1"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -363,34 +410,34 @@ const AIAssistant = () => {
                 </div>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-all duration-200 flex items-center justify-center shadow-md"
+                  className="bg-blue-600 text-white p-2 md:p-3 rounded-full hover:bg-blue-700 transition-all duration-200 flex items-center justify-center shadow-md"
                   disabled={!newMessage.trim()}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" viewBox="0 0 20 20" fill="currentColor">
                     <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                   </svg>
                 </button>
               </form>
               
               {/* Quick suggestions */}
-              <div className="mt-4">
+              <div className="mt-3 md:mt-4">
                 <h3 className="text-xs font-medium text-gray-500 mb-2">Quick suggestions:</h3>
                 <div className="flex flex-wrap gap-2">
                   <button 
                     onClick={() => setNewMessage("Help me understand photosynthesis")} 
-                    className="px-3 py-2 bg-blue-100 text-blue-600 rounded-full text-sm transition-all duration-200 hover:shadow-md"
+                    className="px-2 py-1 md:px-3 md:py-2 bg-blue-100 text-blue-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
                   >
                     Help me understand photosynthesis
                   </button>
                   <button 
                     onClick={() => setNewMessage("How do I solve quadratic equations?")} 
-                    className="px-3 py-2 bg-blue-100 text-blue-600 rounded-full text-sm transition-all duration-200 hover:shadow-md"
+                    className="px-2 py-1 md:px-3 md:py-2 bg-blue-100 text-blue-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
                   >
                     How do I solve quadratic equations?
                   </button>
                   <button 
                     onClick={() => setNewMessage("Explain the causes of World War II")} 
-                    className="px-3 py-2 bg-blue-100 text-blue-600 rounded-full text-sm transition-all duration-200 hover:shadow-md"
+                    className="px-2 py-1 md:px-3 md:py-2 bg-blue-100 text-blue-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
                   >
                     Explain the causes of World War II
                   </button>

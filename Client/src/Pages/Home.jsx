@@ -20,6 +20,11 @@ import {
   FaMapMarkerAlt,
 } from "react-icons/fa";
 import chatGptImage from "../assets/ChatGPT Image Jun 18, 2025, 04_18_15 PM.png";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+import image from "../assets/image.jfif";
+import video1 from "../assets/Edunex-Vid.mp4"
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -217,8 +222,12 @@ const HeroSection = () => {
                     <FaGraduationCap className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white text-sm sm:text-base font-medium">Learn</h3>
-                    <p className="text-white/70 text-xs sm:text-sm">At your pace</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">
+                      Learn
+                    </h3>
+                    <p className="text-white/70 text-xs sm:text-sm">
+                      At your pace
+                    </p>
                   </div>
                 </div>
                 <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
@@ -226,8 +235,12 @@ const HeroSection = () => {
                     <FaBook className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white text-sm sm:text-base font-medium">Study</h3>
-                    <p className="text-white/70 text-xs sm:text-sm">Smart content</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">
+                      Study
+                    </h3>
+                    <p className="text-white/70 text-xs sm:text-sm">
+                      Smart content
+                    </p>
                   </div>
                 </div>
                 <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
@@ -235,8 +248,12 @@ const HeroSection = () => {
                     <FaChalkboardTeacher className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white text-sm sm:text-base font-medium">Teach</h3>
-                    <p className="text-white/70 text-xs sm:text-sm">Share knowledge</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">
+                      Teach
+                    </h3>
+                    <p className="text-white/70 text-xs sm:text-sm">
+                      Share knowledge
+                    </p>
                   </div>
                 </div>
                 <div className="bg-white/5 p-3 sm:p-4 rounded-lg border border-white/10 flex items-center backdrop-blur-sm hover:bg-white/10 transition-colors duration-300 group">
@@ -244,13 +261,15 @@ const HeroSection = () => {
                     <FaUserGraduate className="text-white text-lg sm:text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-white text-sm sm:text-base font-medium">Grow</h3>
-                    <p className="text-white/70 text-xs sm:text-sm">Build skills</p>
+                    <h3 className="text-white text-sm sm:text-base font-medium">
+                      Grow
+                    </h3>
+                    <p className="text-white/70 text-xs sm:text-sm">
+                      Build skills
+                    </p>
                   </div>
                 </div>
               </div>
-
-             
             </div>
           </div>
         </motion.div>
@@ -439,45 +458,18 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* For Teachers */}
-            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100">
-              <div className="flex justify-center mb-6 space-x-4">
-                <motion.div
-                  className="bg-primary/10 p-3 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <div className="relative">
-                    <FaBook className="text-primary text-2xl" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-bright-green rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="bg-primary/10 p-3 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                >
-                  <div className="relative">
-                    <FaChalkboardTeacher className="text-primary text-2xl" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-bright-green rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
-
-              <h3 className="text-xl font-bold mb-4 text-primary text-center">
+          {/* For Teachers Row */}
+          <div className="flex flex-col md:flex-row items-center mb-12 bg-white p-6 rounded-lg ">
+            {/* Left side: Text content */}
+            <div className="w-full md:w-1/2 pr-0 md:pr-8">
+              <h3 className="text-2xl font-bold mb-6 text-primary">
                 For Teachers
               </h3>
 
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 <li className="flex items-start">
                   <div className="bg-bright-green/10 p-1 rounded-full mr-3 mt-1">
-                    <div className="w-3 h-3 bg-bright-green rounded-full"></div>
+                    <div className="w-4 h-4 bg-bright-green rounded-full"></div>
                   </div>
                   <p className="text-gray-700">
                     AI-generated lesson plans, examples, and storytelling
@@ -485,7 +477,7 @@ const Home = () => {
                 </li>
                 <li className="flex items-start">
                   <div className="bg-bright-green/10 p-1 rounded-full mr-3 mt-1">
-                    <div className="w-3 h-3 bg-bright-green rounded-full"></div>
+                    <div className="w-4 h-4 bg-bright-green rounded-full"></div>
                   </div>
                   <p className="text-gray-700">
                     Ready-to-use quizzes and activities
@@ -493,53 +485,50 @@ const Home = () => {
                 </li>
                 <li className="flex items-start">
                   <div className="bg-bright-green/10 p-1 rounded-full mr-3 mt-1">
-                    <div className="w-3 h-3 bg-bright-green rounded-full"></div>
+                    <div className="w-4 h-4 bg-bright-green rounded-full"></div>
                   </div>
                   <p className="text-gray-700">
                     Boost confidence, clarity, and delivery
                   </p>
                 </li>
+                <li className="flex items-start">
+                  <div className="bg-bright-green/10 p-1 rounded-full mr-3 mt-1">
+                    <div className="w-4 h-4 bg-bright-green rounded-full"></div>
+                  </div>
+                  <p className="text-gray-700">
+                    Save hours of preparation time
+                  </p>
+                </li>
               </ul>
+
+              <button className="mt-6 bg-bright-green text-white py-2 px-6 rounded-md hover:bg-bright-green/90 transition-colors duration-300 flex items-center">
+                Learn More <FaArrowRight className="ml-2" />
+              </button>
             </div>
 
-            {/* For Students */}
-            <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100">
-              <div className="flex justify-center mb-6 space-x-4">
-                <motion.div
-                  className="bg-primary/10 p-3 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                >
-                  <div className="relative">
-                    <div className="text-primary text-2xl">💬</div>
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="bg-primary/10 p-3 rounded-full"
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                >
-                  <div className="relative">
-                    <FaUserGraduate className="text-primary text-2xl" />
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                  </div>
-                </motion.div>
+            {/* Right side: Image/Icons */}
+            <div className="w-full md:w-1/2 flex justify-center items-center mt-8 md:mt-0">
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-bright-green to-bright-green/50 rounded-xl blur-lg opacity-30 animate-pulse"></div>
+                <div className="relative bg-white rounded-xl border border-gray-100 shadow-xl">
+                 <video autoPlay src={video1}></video>
+                </div>
               </div>
+            </div>
+          </div>
 
-              <h3 className="text-xl font-bold mb-4 text-primary text-center">
+          {/* For Students Row */}
+          <div className="flex flex-col md:flex-row items-center bg-white p-6 rounded-lg ">
+            {/* Left side: Text content */}
+            <div className="w-full md:w-1/2 pr-0 md:pr-8">
+              <h3 className="text-2xl font-bold mb-6 text-primary">
                 For Students
               </h3>
 
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 <li className="flex items-start">
                   <div className="bg-accent/10 p-1 rounded-full mr-3 mt-1">
-                    <div className="w-3 h-3 bg-accent rounded-full"></div>
+                    <div className="w-4 h-4 bg-accent rounded-full"></div>
                   </div>
                   <p className="text-gray-700">
                     Ask doubts, get instant answers
@@ -547,17 +536,37 @@ const Home = () => {
                 </li>
                 <li className="flex items-start">
                   <div className="bg-accent/10 p-1 rounded-full mr-3 mt-1">
-                    <div className="w-3 h-3 bg-accent rounded-full"></div>
+                    <div className="w-4 h-4 bg-accent rounded-full"></div>
                   </div>
                   <p className="text-gray-700">Personalized learning quizzes</p>
                 </li>
                 <li className="flex items-start">
                   <div className="bg-accent/10 p-1 rounded-full mr-3 mt-1">
-                    <div className="w-3 h-3 bg-accent rounded-full"></div>
+                    <div className="w-4 h-4 bg-accent rounded-full"></div>
                   </div>
                   <p className="text-gray-700">Never study alone again</p>
                 </li>
+                <li className="flex items-start">
+                  <div className="bg-accent/10 p-1 rounded-full mr-3 mt-1">
+                    <div className="w-4 h-4 bg-accent rounded-full"></div>
+                  </div>
+                  <p className="text-gray-700">Learn at your own pace</p>
+                </li>
               </ul>
+
+              <button className="mt-6 bg-accent text-white py-2 px-6 rounded-md hover:bg-accent/90 transition-colors duration-300 flex items-center">
+                Learn More <FaArrowRight className="ml-2" />
+              </button>
+            </div>
+
+            {/* Right side: Image/Icons */}
+            <div className="w-full md:w-1/2 flex justify-center items-center mt-8 md:mt-0">
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-bright-green to-bright-green/50 rounded-xl blur-lg opacity-30 animate-pulse"></div>
+                <div className="relative bg-white rounded-xl border border-gray-100 shadow-xl ">
+                  <img className="" src={image} alt="" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -955,11 +964,8 @@ const Home = () => {
                 performance. I'm more engaged and confident than ever before."
               </p>
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-             
-                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3"></div>
                 <div>
-                  
                   <p className="text-gray-500 text-xs">Student</p>
                 </div>
               </div>
@@ -979,11 +985,8 @@ const Home = () => {
                 and truly care."
               </p>
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-          
-                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3"></div>
                 <div>
-                  
                   <p className="text-gray-500 text-xs">Parent</p>
                 </div>
               </div>
@@ -1003,11 +1006,8 @@ const Home = () => {
                 better results."
               </p>
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-
-                </div>
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3"></div>
                 <div>
-                 
                   <p className="text-gray-500 text-xs">Teacher</p>
                 </div>
               </div>
@@ -1082,9 +1082,10 @@ const Home = () => {
                     <motion.a
                       className="flex items-center justify-center 
                       text-gray-700 hover:text-bright-green transition-colors duration-300"
-                      whileHover={{ x: 3 }} 
+                      whileHover={{ x: 3 }}
                     >
-                      <FaMapMarkerAlt className="text-bright-green mb-7 ml-5" /> 31 M2, Madhuram Circle, Dindoli, Surat, Gujarat
+                      <FaMapMarkerAlt className="text-bright-green mb-7 ml-5" />{" "}
+                      31 M2, Madhuram Circle, Dindoli, Surat, Gujarat
                     </motion.a>
                   </div>
                 </motion.div>
