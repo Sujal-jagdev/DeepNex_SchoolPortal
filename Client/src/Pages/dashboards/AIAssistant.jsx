@@ -193,7 +193,7 @@ const AIAssistant = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50 ">
       {/* Header */}
       <div className="bg-blue-600 bg-opacity-95 text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex justify-between items-center">
@@ -310,7 +310,7 @@ const AIAssistant = () => {
         </div>
         
         {/* Main chat area */}
-        <div className="flex-grow flex flex-col overflow-hidden p-2 md:p-4">
+        <div className="flex-grow flex flex-col overflow-hidden p-2 md:p-4 text-black ">
           <div className="flex-grow bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col">
             {/* Chat messages */}
             <div className="flex-grow overflow-y-auto p-3 md:p-6 bg-gray-50">
