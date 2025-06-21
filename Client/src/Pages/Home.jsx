@@ -286,6 +286,78 @@ const Home = () => {
   const [role, setRole] = useState("");
   const navigate = useNavigate();
 
+  const videoRef = useRef(null);
+  const textRef = useRef(null);
+  const textRef2 = useRef(null);
+  const textRef3 = useRef(null);
+  gsap.registerPlugin(ScrollTrigger);
+
+  useGSAP(() => {
+    gsap.to(videoRef.current, {
+      scale: 1.2,
+      duration: 1,
+      y: -50,
+      scrollTrigger: {
+        trigger: videoRef.current,
+        scroller: "body",
+        
+        start: "top 20%",
+        id: "imageAnimation",
+        scrub: 2
+      }
+    })
+
+    gsap.to(textRef.current, {
+      y: -1000,
+      opacity: 0.3,
+      scrollTrigger: {
+        trigger: textRef.current,
+        scroller: "body",
+        
+        start: "top 60%",
+        id: "textAnimation",
+        scrub: 2,
+      }
+    })
+
+    gsap.to(textRef2.current, {
+      y: -1000,
+      scrollTrigger: {
+        trigger: textRef2.current,
+        scroller: "body",
+        
+        id: "textAnimation2",
+        scrub: 2,
+      }
+    })
+
+    gsap.to(".bgCircle", {
+      scale: "1",
+      duration: 1,
+      scrollTrigger: {
+        trigger: ".bgCircle",
+        scroller: "body",
+        
+        id: "bgCircleAnimation",
+        start: "top 130%"
+      }
+    })
+
+    gsap.from(textRef3.current, {
+      opacity: 0,
+      y: -100,
+      duration: 0.8,
+      scrollTrigger: {
+        trigger: textRef3.current,
+        scroller: "body",
+        
+        id: "textAnimation3",
+        start: "top 60%",
+
+      }
+    })
+  })
+
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem("user");
@@ -444,8 +516,103 @@ const Home = () => {
         </div>
       </section>
 
+      <div className="relative h-[100vh] overflow-hidden mt-5">
+        {/* 🔹 Background Video Layer */}
+        <video
+          ref={videoRef}
+          className="absolute top-0 left-[3%] w-[210vh] h-full object-cover rounded-xl fixed"
+          src="https://web.meetcleo.com/assets/videos/temp/finger_scrolling_hd30.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+
+        {/* 🔹 First Line Heading */}
+        <div ref={textRef} className="relative z-10 flex items-center pl-[100px] h-screen">
+          <h1 className="text-6xl text-white font-bold text-center mt-[100px]">
+            Money talks. <br /> Cleo talks back.
+          </h1>
+        </div>
+
+        {/* 🔹 Text Overlapping on Top of Video */}
+        <div
+          ref={textRef2}
+          className="relative z-10 mt-[-300px] text-white ps-[500px]"
+        >
+          <div className="max-w-6xl mx-auto space-y-16 text-white">
+            {/* Animated gradient background element */}
+            <div className="bgCircle absolute -top-40 -left-40 w-[800px] h-[800px] rounded-full bg-gradient-to-r from-green-600/20 to-green-600/20 animate-[pulse_8s_ease-in-out_infinite] mix-blend-screen pointer-events-none scale-0"></div>
+
+            {/* Main content with staggered animations */}
+            <div ref={textRef3} className="relative space-y-16 z-20">
+              <div className="fade-up text-center">
+                <div className="inline-block mb-6 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white">
+                  <span className="text-white font-medium">SMART FINANCE</span>
+                </div>
+                <h2 className="text-6xl font-bold text-white   ">
+                  Why Choose Cleo?
+                </h2>
+                <p className="mt-6 text-xl text-whiye max-w-2xl mx-auto leading-relaxed">
+                  She helps you budget, save, and understand your money in a fun and
+                  <span className="relative mx-2">
+                    <span className="relative z-10">smart</span>
+                    <span className="absolute bottom-0 left-0 w-full h-2 bg-blue-400/30 -rotate-1 z-0"></span>
+                  </span>
+                  way.
+                </p>
+              </div>
+
+              {/* Feature cards grid */}
+              <div className="fade-up grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+                {[
+                  {
+                    icon: '💰',
+                    title: 'Smart Budgeting',
+                    desc: 'Automated tracking that actually works'
+                  },
+                  {
+                    icon: '📈',
+                    title: 'Savings Goals',
+                    desc: 'Reach your targets without thinking'
+                  },
+                  {
+                    icon: '🤖',
+                    title: 'AI Insights',
+                    desc: 'Personalized money advice'
+                  }
+                ].map((feature, i) => (
+                  <div
+                    key={i}
+                    className="bg-gradient-to-b from-white/5 to-white/0 p-6 rounded-2xl border border-white/10 backdrop-blur-sm hover:border-blue-400/30 transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <div className="text-4xl mb-4">{feature.icon}</div>
+                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-gray-300">{feature.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Enhanced CTA button */}
+              <div className="fade-up flex justify-center">
+                <button className="relative px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-xl text-lg font-medium transition-all duration-300 group overflow-hidden">
+                  <span className="relative z-10 flex items-center">
+                    Get Started with Cleo
+                    <svg className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                  </span>
+                  <span className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
       {/* Meet Your AI Co-Teachers & Student Assistants Section */}
-      <section className="py-16 px-4 md:px-8 bg-white">
+      <section className="py-16 px-4 md:px-8 bg-white ">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl md:text-3xl font-bold mb-3 text-primary">
@@ -511,7 +678,7 @@ const Home = () => {
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-bright-green to-bright-green/50 rounded-xl blur-lg opacity-30 animate-pulse"></div>
                 <div className="relative bg-white rounded-xl border border-gray-100 shadow-xl">
-                 <video autoPlay src={video1}></video>
+                  <video autoPlay muted loop playsInline src={video1}></video>
                 </div>
               </div>
             </div>

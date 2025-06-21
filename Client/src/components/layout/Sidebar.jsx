@@ -78,11 +78,6 @@ const Sidebar = ({ userRole, onLogout }) => {
     const roleSpecificItems = {
       student: [
         {
-          name: 'Courses',
-          icon: <AcademicCapIcon className="w-6 h-6" />,
-          path: '/courses',
-        },
-        {
           name: 'AI Assistant',
           icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/ai-assistant`,
