@@ -347,7 +347,7 @@ const ProfileCompletion = () => {
         )}
         
         {/* Common Fields for All Roles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-black">
           <div>
             <label htmlFor="fullname" className="block text-gray-700 font-medium mb-2">
               Full Name *
@@ -399,7 +399,7 @@ const ProfileCompletion = () => {
         
         {/* Role-Specific Fields */}
         {selectedRole === 'student' && (
-          <div className="mt-6 border-t pt-6">
+          <div className="mt-6 border-t pt-6 text-black">
             <h3 className="text-lg font-semibold mb-4">Student Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -561,7 +561,7 @@ const ProfileCompletion = () => {
         )}
         
         {selectedRole === 'teacher' && (
-          <div className="mt-6 border-t pt-6">
+          <div className="mt-6 border-t pt-6 text-black">
             <h3 className="text-lg font-semibold mb-4">Teacher Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -660,7 +660,7 @@ const ProfileCompletion = () => {
         )}
         
         {selectedRole === 'hod' && (
-          <div className="mt-6 border-t pt-6">
+          <div className="mt-6 border-t pt-6 text-black">
             <h3 className="text-lg font-semibold mb-4">HOD Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -728,7 +728,7 @@ const ProfileCompletion = () => {
         )}
         
         {selectedRole === 'admin' && (
-          <div className="mt-6 border-t pt-6">
+          <div className="mt-6 border-t pt-6 text-black">
             <h3 className="text-lg font-semibold mb-4">Admin Information</h3>
             <div className="grid grid-cols-1 gap-4">
               <div>
