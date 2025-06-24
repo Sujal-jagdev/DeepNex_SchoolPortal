@@ -23,8 +23,9 @@ const TeacherAssistant = () => {
 
   // State for mobile sidebar toggle
   const [showSidebar, setShowSidebar] = useState(false);
+  const textareaRef = useRef(null);
 
-  // Scroll to bottom of messages
+// Scroll to bottom of messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -200,7 +201,7 @@ const TeacherAssistant = () => {
           <div className="flex items-center space-x-3">
             {/* Mobile menu button */}
             <button 
-              className="md:hidden p-2 rounded-md hover:bg-green-700 transition-colors"
+              className="md:hidden p-2 rounded-md hover:bg-green-700 transition-colors ml-[20px]"
               onClick={toggleSidebar}
               aria-label="Toggle sidebar"
             >
@@ -216,7 +217,6 @@ const TeacherAssistant = () => {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-bold">Teacher's Partner</h1>
-              <p className="text-xs md:text-sm text-white text-opacity-80">Your staffroom buddy for lesson planning</p>
             </div>
           </div>
         </div>
@@ -227,7 +227,7 @@ const TeacherAssistant = () => {
         {/* Mobile sidebar overlay */}
         {showSidebar && (
           <div 
-            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-10"
+            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={toggleSidebar}
             aria-hidden="true"
           ></div>
@@ -235,9 +235,19 @@ const TeacherAssistant = () => {
         
         {/* Sidebar with chat history */}
         <div 
-          className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-20 w-[85%] max-w-[320px] md:w-80 md:min-w-[280px] h-[calc(100vh-64px)] md:h-auto p-4 border-r border-gray-200 bg-white overflow-y-auto flex-shrink-0 transition-transform duration-300 ease-in-out`}
+          className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 fixed md:relative z-50 w-[85%] max-w-[320px] md:w-80 md:min-w-[280px] h-screen md:h-full p-4 border-r border-gray-200 bg-white overflow-y-auto flex-shrink-0 transition-transform duration-300 ease-in-out top-0 left-0`}
         >
-          <div className="space-y-4">
+          {/* Mobile close button */}
+          <button 
+            className="md:hidden absolute top-2 right-2 p-1 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            onClick={toggleSidebar}
+            aria-label="Close sidebar"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="space-y-4 mt-8 md:mt-0">
             {/* New Chat button */}
             <button 
               onClick={startNewChat}
@@ -291,29 +301,15 @@ const TeacherAssistant = () => {
               )}
             </div>
             
-            {/* Teacher Assistant info card */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-6">
-              <h3 className="font-medium text-gray-800 mb-3">About Teacher's Partner</h3>
-              <div className="space-y-3 text-sm text-gray-600">
-                <p>Your teaching partner is designed to help with:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Lesson planning</li>
-                  <li>Activity ideas</li>
-                  <li>Teaching strategies</li>
-                  <li>Subject-specific guidance</li>
-                  <li>Classroom management tips</li>
-                </ul>
-                <p className="text-xs text-gray-500 mt-4">This assistant speaks in Hinglish and adapts to your teaching needs.</p>
-              </div>
-            </div>
+            {/* Removed Teacher Assistant info card */}
           </div>
         </div>
         
         {/* Main chat area */}
-        <div className="flex-grow flex flex-col overflow-hidden p-2 md:p-4 text-black ">
-          <div className="flex-grow bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col">
+        <div className="flex-grow flex flex-col overflow-hidden p-2 md:p-4 text-black">
+          <div className="flex-grow bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200 flex flex-col w-full">
             {/* Chat messages */}
-            <div className="flex-grow overflow-y-auto p-3 md:p-6 bg-gray-50">
+            <div className="flex-grow overflow-y-auto p-3 md:p-6 bg-gray-50 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center p-4 md:p-8 rounded-lg bg-white shadow-sm border border-gray-200 max-w-md mx-2">
@@ -342,13 +338,13 @@ const TeacherAssistant = () => {
                           </div>
                         </div>
                       )}
-                      <div className="max-w-[80%] md:max-w-[75%] overflow-hidden break-words">
+                      <div className="max-w-[85%] md:max-w-[80%] overflow-hidden break-words">
                         <div 
                           className={`p-3 md:p-4 rounded-2xl shadow-sm ${message.sender === 'user' 
                             ? `bg-green-600 text-white` 
                             : 'bg-white border border-gray-200'}`}
                         >
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-sm md:text-base whitespace-pre-wrap">{message.content}</p>
                         </div>
                         <div className="text-xs text-gray-500 mt-1 px-2">
                           {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -391,14 +387,15 @@ const TeacherAssistant = () => {
             </div>
             
             {/* Message input */}
-            <div className="p-3 md:p-4 border-t border-gray-200 bg-white">
-              <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+            <div className="p-3 md:p-4 border-t border-gray-200 bg-white sticky bottom-0">
+              <form onSubmit={handleSendMessage} className="flex items-center space-x-2 w-full">
                 <div className="relative flex-grow">
                   <textarea
+                    ref={textareaRef}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Ask about lesson planning, teaching strategies..."
-                    className="w-full px-3 py-2 md:px-4 md:py-3 pr-10 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all resize-none min-h-[40px] md:min-h-[50px] max-h-[100px] md:max-h-[120px] overflow-auto text-sm md:text-base"
+                    placeholder="Ask me anything about teaching..."
+                    className="w-full px-3 py-2 md:px-4 md:py-3 pr-10 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all resize-none min-h-[40px] md:min-h-[50px] max-h-[100px] md:max-h-[120px] overflow-auto text-base"
                     rows="1"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -419,30 +416,7 @@ const TeacherAssistant = () => {
                 </button>
               </form>
               
-              {/* Quick suggestions */}
-              <div className="mt-3 md:mt-4">
-                <h3 className="text-xs font-medium text-gray-500 mb-2">Quick suggestions:</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button 
-                    onClick={() => setNewMessage("7th ka Water Cycle ka engaging plan chahiye")} 
-                    className="px-2 py-1 md:px-3 md:py-2 bg-green-100 text-green-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
-                  >
-                    7th ka Water Cycle ka engaging plan chahiye
-                  </button>
-                  <button 
-                    onClick={() => setNewMessage("Class 10 ke liye Quadratic Equations ka lesson plan banao")} 
-                    className="px-2 py-1 md:px-3 md:py-2 bg-green-100 text-green-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
-                  >
-                    Class 10 ke liye Quadratic Equations ka lesson plan
-                  </button>
-                  <button 
-                    onClick={() => setNewMessage("5th class ke bacchon ko English grammar kaise sikhau?")} 
-                    className="px-2 py-1 md:px-3 md:py-2 bg-green-100 text-green-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
-                  >
-                    5th class ke bacchon ko English grammar kaise sikhau?
-                  </button>
-                </div>
-              </div>
+              {/* Removed Quick suggestions */}
             </div>
           </div>
         </div>
