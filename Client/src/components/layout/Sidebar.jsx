@@ -67,7 +67,7 @@ const Sidebar = ({ userRole, onLogout }) => {
           path: `/dashboard/${userRole}/profile`,
         },
         {
-          name: 'AI Assistant',
+          name: 'Teacher\'s Partner',
           icon: <ChatBubbleLeftRightIcon className="w-6 h-6" />,
           path: `/dashboard/${userRole}/ai-assistant`,
         }

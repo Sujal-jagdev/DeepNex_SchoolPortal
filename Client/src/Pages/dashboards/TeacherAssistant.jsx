@@ -2,12 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const AIAssistant = () => {
+const TeacherAssistant = () => {
   // State for messages
   const [messages, setMessages] = useState([
     {
       id: 1,
-      content: 'Hello! I\'m your AI assistant. How can I help you today?',
+      content: 'Hello! I\'m your teaching partner. How can I help you plan your lessons today?',
       sender: 'ai',
       timestamp: new Date(),
     },
@@ -57,7 +57,7 @@ const AIAssistant = () => {
         return;
       }
       
-      const response = await axios.get(`https://edunex.deepnex.in/api/chat/student/history?userId=${userId}`);
+      const response = await axios.get(`https://edunex.deepnex.in/api/chat/teacher/history?userId=${userId}`);
       
       if (response.data.success && response.data.sessions) {
         setChatSessions(response.data.sessions);
@@ -73,7 +73,7 @@ const AIAssistant = () => {
   const loadChatHistory = async (sessionId) => {
     try {
       setIsTyping(true);
-      const response = await axios.get(`https://edunex.deepnex.in/api/chat/student/history?sessionId=${sessionId}`);
+      const response = await axios.get(`https://edunex.deepnex.in/api/chat/teacher/history?sessionId=${sessionId}`);
       
       if (response.data.success && response.data.history) {
         // Convert the chat history to our message format
@@ -124,7 +124,7 @@ const AIAssistant = () => {
       const userId = localStorage.getItem('userId');
       
       // Call backend API with userId and sessionId if available
-      const response = await axios.post('https://edunex.deepnex.in/api/chat/student', {
+      const response = await axios.post('https://edunex.deepnex.in/api/chat/teacher', {
         message: newMessage,
         userId: userId,
         sessionId: currentSessionId
@@ -174,7 +174,7 @@ const AIAssistant = () => {
     setMessages([
       {
         id: 1,
-        content: 'Hello! I\'m your AI assistant. How can I help you today?',
+        content: 'Hello! I\'m your teaching partner. How can I help you plan your lessons today?',
         sender: 'ai',
         timestamp: new Date(),
       },
@@ -195,12 +195,12 @@ const AIAssistant = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50 ">
       {/* Header */}
-      <div className="bg-blue-600 bg-opacity-95 text-white">
+      <div className="bg-green-600 bg-opacity-95 text-white">
         <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 flex justify-between items-center">
           <div className="flex items-center space-x-3">
             {/* Mobile menu button */}
             <button 
-              className="md:hidden p-2 rounded-md hover:bg-blue-700 transition-colors"
+              className="md:hidden p-2 rounded-md hover:bg-green-700 transition-colors"
               onClick={toggleSidebar}
               aria-label="Toggle sidebar"
             >
@@ -211,12 +211,12 @@ const AIAssistant = () => {
             
             <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-7 md:w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v2.8a2.25 2.25 0 01-1.5 2.25m0 0a4.5 4.5 0 01-1.5.25m-4.5-9.5a4.5 4.5 0 001.423-.25m4.5 9.5a4.5 4.5 0 001.423-.25m0-9.5a4.5 4.5 0 00-1.423-.25m0 0a4.5 4.5 0 01-4.5 0m0 0a4.5 4.5 0 00-1.423.25m0 0a4.5 4.5 0 01-4.5 0" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold">AI Learning Assistant</h1>
-              <p className="text-xs md:text-sm text-white text-opacity-80">Your personal academic companion</p>
+              <h1 className="text-xl md:text-2xl font-bold">Teacher's Partner</h1>
+              <p className="text-xs md:text-sm text-white text-opacity-80">Your staffroom buddy for lesson planning</p>
             </div>
           </div>
         </div>
@@ -241,7 +241,7 @@ const AIAssistant = () => {
             {/* New Chat button */}
             <button 
               onClick={startNewChat}
-              className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-all flex items-center justify-center"
+              className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition-all flex items-center justify-center"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -255,7 +255,7 @@ const AIAssistant = () => {
               
               {isLoadingSessions ? (
                 <div className="text-center py-4">
-                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
                   <p className="text-sm text-gray-500 mt-2">Loading sessions...</p>
                 </div>
               ) : chatSessions.length === 0 ? (
@@ -268,11 +268,11 @@ const AIAssistant = () => {
                     <button
                       key={session.id}
                       onClick={() => loadChatHistory(session.id)}
-                      className={`w-full text-left p-3 rounded-lg transition-all ${currentSessionId === session.id ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50 border border-transparent'}`}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${currentSessionId === session.id ? 'bg-green-50 border border-green-200' : 'hover:bg-gray-50 border border-transparent'}`}
                     >
                       <div className="flex items-start">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3 flex-shrink-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mr-3 flex-shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
                           </svg>
                         </div>
@@ -291,19 +291,19 @@ const AIAssistant = () => {
               )}
             </div>
             
-            {/* AI Assistant info card */}
+            {/* Teacher Assistant info card */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-6">
-              <h3 className="font-medium text-gray-800 mb-3">About AI Assistant</h3>
+              <h3 className="font-medium text-gray-800 mb-3">About Teacher's Partner</h3>
               <div className="space-y-3 text-sm text-gray-600">
-                <p>Your AI Learning Assistant is designed to help with:</p>
+                <p>Your teaching partner is designed to help with:</p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Homework assistance</li>
-                  <li>Concept explanations</li>
-                  <li>Study guidance</li>
-                  <li>Research help</li>
-                  <li>Practice problems</li>
+                  <li>Lesson planning</li>
+                  <li>Activity ideas</li>
+                  <li>Teaching strategies</li>
+                  <li>Subject-specific guidance</li>
+                  <li>Classroom management tips</li>
                 </ul>
-                <p className="text-xs text-gray-500 mt-4">This AI is continuously learning to provide better assistance.</p>
+                <p className="text-xs text-gray-500 mt-4">This assistant speaks in Hinglish and adapts to your teaching needs.</p>
               </div>
             </div>
           </div>
@@ -317,13 +317,13 @@ const AIAssistant = () => {
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center p-4 md:p-8 rounded-lg bg-white shadow-sm border border-gray-200 max-w-md mx-2">
-                    <div className="w-12 h-12 md:w-16 md:h-16 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-12 h-12 md:w-16 md:h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                       </svg>
                     </div>
                     <h3 className="text-base md:text-lg font-semibold text-gray-800 mb-2">Start a Conversation</h3>
-                    <p className="text-sm text-gray-600">Ask me anything about your studies, homework, or academic concepts you'd like to understand better.</p>
+                    <p className="text-sm text-gray-600">Ask me about lesson planning, teaching strategies, or any classroom challenges you're facing.</p>
                   </div>
                 </div>
               ) : (
@@ -335,9 +335,9 @@ const AIAssistant = () => {
                     >
                       {message.sender === 'ai' && (
                         <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
-                          <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white">
+                          <div className="w-full h-full bg-green-600 flex items-center justify-center text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v2.8a2.25 2.25 0 01-1.5 2.25m0 0a4.5 4.5 0 01-1.5.25m-4.5-9.5a4.5 4.5 0 001.423-.25m4.5 9.5a4.5 4.5 0 001.423-.25m0-9.5a4.5 4.5 0 00-1.423-.25m0 0a4.5 4.5 0 01-4.5 0m0 0a4.5 4.5 0 00-1.423.25m0 0a4.5 4.5 0 01-4.5 0" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                           </div>
                         </div>
@@ -345,7 +345,7 @@ const AIAssistant = () => {
                       <div className="max-w-[80%] md:max-w-[75%] overflow-hidden break-words">
                         <div 
                           className={`p-3 md:p-4 rounded-2xl shadow-sm ${message.sender === 'user' 
-                            ? `bg-blue-600 text-white` 
+                            ? `bg-green-600 text-white` 
                             : 'bg-white border border-gray-200'}`}
                         >
                           <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -368,18 +368,18 @@ const AIAssistant = () => {
                   {isTyping && (
                     <div className="flex justify-start animate-fadeIn">
                       <div className="w-7 h-7 md:w-8 md:h-8 rounded-full overflow-hidden mr-2 flex-shrink-0">
-                        <div className="w-full h-full bg-blue-600 flex items-center justify-center text-white">
+                        <div className="w-full h-full bg-green-600 flex items-center justify-center text-white">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25m0 0v2.8a2.25 2.25 0 01-1.5 2.25m0 0a4.5 4.5 0 01-1.5.25m-4.5-9.5a4.5 4.5 0 001.423-.25m4.5 9.5a4.5 4.5 0 001.423-.25m0-9.5a4.5 4.5 0 00-1.423-.25m0 0a4.5 4.5 0 01-4.5 0m0 0a4.5 4.5 0 00-1.423.25m0 0a4.5 4.5 0 01-4.5 0" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                           </svg>
                         </div>
                       </div>
                       <div className="max-w-[80%] md:max-w-[75%] overflow-hidden break-words">
                         <div className="p-3 md:p-4 rounded-2xl shadow-sm bg-white border border-gray-200">
                           <div className="flex space-x-2">
-                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                            <div className="w-2 h-2 bg-green-600 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-green-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                            <div className="w-2 h-2 bg-green-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                           </div>
                         </div>
                       </div>
@@ -397,8 +397,8 @@ const AIAssistant = () => {
                   <textarea
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Ask me anything about your studies..."
-                    className="w-full px-3 py-2 md:px-4 md:py-3 pr-10 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all resize-none min-h-[40px] md:min-h-[50px] max-h-[100px] md:max-h-[120px] overflow-auto text-sm md:text-base"
+                    placeholder="Ask about lesson planning, teaching strategies..."
+                    className="w-full px-3 py-2 md:px-4 md:py-3 pr-10 md:pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-all resize-none min-h-[40px] md:min-h-[50px] max-h-[100px] md:max-h-[120px] overflow-auto text-sm md:text-base"
                     rows="1"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -410,7 +410,7 @@ const AIAssistant = () => {
                 </div>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white p-2 md:p-3 rounded-full hover:bg-blue-700 transition-all duration-200 flex items-center justify-center shadow-md"
+                  className="bg-green-600 text-white p-2 md:p-3 rounded-full hover:bg-green-700 transition-all duration-200 flex items-center justify-center shadow-md"
                   disabled={!newMessage.trim()}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" viewBox="0 0 20 20" fill="currentColor">
@@ -424,22 +424,22 @@ const AIAssistant = () => {
                 <h3 className="text-xs font-medium text-gray-500 mb-2">Quick suggestions:</h3>
                 <div className="flex flex-wrap gap-2">
                   <button 
-                    onClick={() => setNewMessage("Help me understand photosynthesis")} 
-                    className="px-2 py-1 md:px-3 md:py-2 bg-blue-100 text-blue-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
+                    onClick={() => setNewMessage("7th ka Water Cycle ka engaging plan chahiye")} 
+                    className="px-2 py-1 md:px-3 md:py-2 bg-green-100 text-green-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
                   >
-                    Help me understand photosynthesis
+                    7th ka Water Cycle ka engaging plan chahiye
                   </button>
                   <button 
-                    onClick={() => setNewMessage("How do I solve quadratic equations?")} 
-                    className="px-2 py-1 md:px-3 md:py-2 bg-blue-100 text-blue-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
+                    onClick={() => setNewMessage("Class 10 ke liye Quadratic Equations ka lesson plan banao")} 
+                    className="px-2 py-1 md:px-3 md:py-2 bg-green-100 text-green-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
                   >
-                    How do I solve quadratic equations?
+                    Class 10 ke liye Quadratic Equations ka lesson plan
                   </button>
                   <button 
-                    onClick={() => setNewMessage("Explain the causes of World War II")} 
-                    className="px-2 py-1 md:px-3 md:py-2 bg-blue-100 text-blue-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
+                    onClick={() => setNewMessage("5th class ke bacchon ko English grammar kaise sikhau?")} 
+                    className="px-2 py-1 md:px-3 md:py-2 bg-green-100 text-green-600 rounded-full text-xs md:text-sm transition-all duration-200 hover:shadow-md"
                   >
-                    Explain the causes of World War II
+                    5th class ke bacchon ko English grammar kaise sikhau?
                   </button>
                 </div>
               </div>
@@ -462,4 +462,4 @@ const AIAssistant = () => {
   );
 };
 
-export default AIAssistant;
+export default TeacherAssistant;

@@ -18,6 +18,7 @@ import TeacherDashboard from './Pages/dashboards/TeacherDashboard'
 import HODDashboard from './Pages/dashboards/HODDashboard'
 import AdminDashboard from './Pages/dashboards/AdminDashboard'
 import AIAssistant from './Pages/dashboards/AIAssistant'
+import TeacherAssistant from './Pages/dashboards/TeacherAssistant'
 import StudentAnalytics from './Pages/dashboards/StudentAnalytics'
 import Messages from './Pages/dashboards/Messages'
 import TeacherStudents from './Pages/dashboards/TeacherStudents'
@@ -250,7 +251,26 @@ function App() {
           </ProtectedRoute>
         } />
         
-        {/* Common Routes for all roles */}
+        {/* AI Assistant Routes */}
+        {/* Student AI Assistant */}
+        <Route path="/dashboard/student/ai-assistant" element={
+          <ProtectedRoute isAuthenticated={isAuthenticated} requiredRole="student" userRole={userRole}>
+            <DashboardLayout userRole={userRole} onLogout={handleLogout}>
+              <AIAssistant />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Teacher AI Assistant */}
+        <Route path="/dashboard/teacher/ai-assistant" element={
+          <ProtectedRoute isAuthenticated={isAuthenticated} requiredRole="teacher" userRole={userRole}>
+            <DashboardLayout userRole={userRole} onLogout={handleLogout}>
+              <TeacherAssistant />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } />
+        
+        {/* AI Assistant for other roles */}
         <Route path="/dashboard/:role/ai-assistant" element={
           <ProtectedRoute isAuthenticated={isAuthenticated} requiredRole={userRole} userRole={userRole}>
             <DashboardLayout userRole={userRole} onLogout={handleLogout}>

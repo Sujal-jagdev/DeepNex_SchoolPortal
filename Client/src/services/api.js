@@ -1,9 +1,9 @@
 import axios from "axios";
 
 // Base URLs for different servers
-const MAIN_API_URL = "https://api.edunex.deepnex.in";
-const TEACHER_API_URL = "https://api.edunex.deepnex.in";
-const ADMIN_API_URL = "https://api.edunex.deepnex.in";
+const MAIN_API_URL = "https://edunex.deepnex.in";
+const TEACHER_API_URL = "https://edunex.deepnex.in";
+const ADMIN_API_URL = "https://edunex.deepnex.in";
 
 // Create axios instances for different servers
 const mainApi = axios.create({
