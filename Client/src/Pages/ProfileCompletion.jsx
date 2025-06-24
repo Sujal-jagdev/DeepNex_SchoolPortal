@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { supabase, insertUserData } from '../services/supabaseClient';
+import { motion } from 'framer-motion';
 
 const ProfileCompletion = () => {
   const navigate = useNavigate();
@@ -306,7 +307,7 @@ const ProfileCompletion = () => {
             id="securityPin"
             value={securityPin}
             onChange={(e) => setSecurityPin(e.target.value)}
-            className="w-full text-black px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
             placeholder="Enter security PIN"
           />
         </div>
@@ -347,7 +348,7 @@ const ProfileCompletion = () => {
         )}
         
         {/* Common Fields for All Roles */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-black">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="fullname" className="block text-gray-700 font-medium mb-2">
               Full Name *
@@ -357,7 +358,7 @@ const ProfileCompletion = () => {
               id="fullname"
               value={fullname}
               onChange={(e) => setFullname(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
               placeholder="Enter your full name"
               required
             />
@@ -372,7 +373,7 @@ const ProfileCompletion = () => {
               id="phonenumber"
               value={phonenumber}
               onChange={(e) => setPhonenumber(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
               placeholder="Enter your phone number"
               required
             />
@@ -386,7 +387,7 @@ const ProfileCompletion = () => {
               id="gender"
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
               required
             >
               <option value="">Select Gender</option>
@@ -399,7 +400,7 @@ const ProfileCompletion = () => {
         
         {/* Role-Specific Fields */}
         {selectedRole === 'student' && (
-          <div className="mt-6 border-t pt-6 text-black">
+          <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Student Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -411,7 +412,7 @@ const ProfileCompletion = () => {
                   id="rollNo"
                   value={rollNo}
                   onChange={(e) => setRollNo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter roll number"
                   required
                 />
@@ -431,7 +432,7 @@ const ProfileCompletion = () => {
                       setStream('');
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   required
                 >
                   <option value="">Select Standard/Grade</option>
@@ -455,7 +456,7 @@ const ProfileCompletion = () => {
                     id="stream"
                     value={stream}
                     onChange={(e) => setStream(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                     required
                   >
                     <option value="">Select Stream</option>
@@ -475,7 +476,7 @@ const ProfileCompletion = () => {
                   id="dob"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   required
                 />
               </div>
@@ -489,7 +490,7 @@ const ProfileCompletion = () => {
                   id="parentsName"
                   value={parentsName}
                   onChange={(e) => setParentsName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter parent's name"
                   required
                 />
@@ -504,7 +505,7 @@ const ProfileCompletion = () => {
                   id="parentsNum"
                   value={parentsNum}
                   onChange={(e) => setParentsNum(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter parent's phone number"
                   required
                 />
@@ -518,7 +519,7 @@ const ProfileCompletion = () => {
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter your address"
                   rows="3"
                   required
@@ -534,7 +535,7 @@ const ProfileCompletion = () => {
                   id="previousSchool"
                   value={previousSchool}
                   onChange={(e) => setPreviousSchool(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter previous school name"
                 />
               </div>
@@ -547,7 +548,7 @@ const ProfileCompletion = () => {
                   id="stream"
                   value={stream}
                   onChange={(e) => setStream(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                 >
                   <option value="">Select Stream (Optional)</option>
                   <option value="science">Science</option>
@@ -561,7 +562,7 @@ const ProfileCompletion = () => {
         )}
         
         {selectedRole === 'teacher' && (
-          <div className="mt-6 border-t pt-6 text-black">
+          <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Teacher Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -573,7 +574,7 @@ const ProfileCompletion = () => {
                   id="subjectExpertise"
                   value={subjectExpertise}
                   onChange={(e) => setSubjectExpertise(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter subject expertise"
                   required
                 />
@@ -588,7 +589,7 @@ const ProfileCompletion = () => {
                   id="experience"
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter years of experience"
                   min="0"
                   required
@@ -604,7 +605,7 @@ const ProfileCompletion = () => {
                   id="highestQualification"
                   value={highestQualification}
                   onChange={(e) => setHighestQualification(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter highest qualification"
                   required
                 />
@@ -618,7 +619,7 @@ const ProfileCompletion = () => {
                   id="teachingLevel"
                   value={teachingLevel}
                   onChange={(e) => setTeachingLevel(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   required
                 >
                   <option value="">Select Teaching Level</option>
@@ -636,7 +637,7 @@ const ProfileCompletion = () => {
                   id="bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Tell us about yourself"
                   rows="3"
                 ></textarea>
@@ -650,7 +651,7 @@ const ProfileCompletion = () => {
                   id="securityQuestions"
                   value={securityQuestions || ''}
                   onChange={(e) => setSecurityQuestions(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter security questions and answers (optional)"
                   rows="3"
                 ></textarea>
@@ -660,7 +661,7 @@ const ProfileCompletion = () => {
         )}
         
         {selectedRole === 'hod' && (
-          <div className="mt-6 border-t pt-6 text-black">
+          <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">HOD Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -672,7 +673,7 @@ const ProfileCompletion = () => {
                   id="departmentExpertise"
                   value={departmentExpertise}
                   onChange={(e) => setDepartmentExpertise(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter department expertise"
                   required
                 />
@@ -687,7 +688,7 @@ const ProfileCompletion = () => {
                   id="experience"
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter years of experience"
                   min="0"
                   required
@@ -703,7 +704,7 @@ const ProfileCompletion = () => {
                   id="highestQualification"
                   value={highestQualification}
                   onChange={(e) => setHighestQualification(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter highest qualification"
                   required
                 />
@@ -717,7 +718,7 @@ const ProfileCompletion = () => {
                   id="visionDepartment"
                   value={visionDepartment}
                   onChange={(e) => setVisionDepartment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Describe your vision for the department"
                   rows="3"
                   required
@@ -728,7 +729,7 @@ const ProfileCompletion = () => {
         )}
         
         {selectedRole === 'admin' && (
-          <div className="mt-6 border-t pt-6 text-black">
+          <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Admin Information</h3>
             <div className="grid grid-cols-1 gap-4">
               <div>
@@ -739,7 +740,7 @@ const ProfileCompletion = () => {
                   id="adminAccessLevel"
                   value={adminAccessLevel}
                   onChange={(e) => setAdminAccessLevel(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   required
                 >
                   <option value="">Select Access Level</option>
@@ -758,7 +759,7 @@ const ProfileCompletion = () => {
                   id="adminSecurityQuestions"
                   value={adminSecurityQuestions || ''}
                   onChange={(e) => setAdminSecurityQuestions(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-black"
                   placeholder="Enter security questions and answers (optional)"
                   rows="3"
                 ></textarea>
@@ -788,8 +789,8 @@ const ProfileCompletion = () => {
     );
   };
   
-  // Render role selection
- const renderRoleSelection = () => {
+  // Render role selection with enhanced UI
+  const renderRoleSelection = () => {
     // Define role cards with their details
     const roleCards = [
       {
@@ -898,25 +899,20 @@ const ProfileCompletion = () => {
       return renderRoleSelection();
     }
     
+    // For HOD and Admin, require PIN verification first
     if ((selectedRole === 'hod' || selectedRole === 'admin') && !pinVerified) {
       return renderPinVerificationForm();
     }
     
+    // Otherwise, show the profile completion form
     return renderProfileForm();
   };
   
   return (
-    <div className="bg-gray-50 min-h-screen py-12">
-      <div className="container mx-auto px-4">
-        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="bg-primary py-4">
-            <h2 className="text-2xl font-bold text-center text-white">
-              {!selectedRole ? 'Complete Your Profile' : 
-                `Complete Your ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} Profile`}
-            </h2>
-          </div>
-          
-          <div className="p-6">
+    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+          <div className="px-4 py-5 sm:p-6">
             {renderContent()}
           </div>
         </div>
