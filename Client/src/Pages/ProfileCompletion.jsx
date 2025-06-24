@@ -789,53 +789,105 @@ const ProfileCompletion = () => {
   };
   
   // Render role selection
-  const renderRoleSelection = () => {
-    return (
-      <div className="space-y-4">
-        <p className="text-gray-600 mb-4 text-center">
-          Please select your role to complete your profile
-        </p>
-        
-        <button
-          onClick={() => handleRoleSelect('student')}
-          className="w-full btn bg-blue-500 hover:bg-blue-600 text-white py-3 flex items-center justify-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+ const renderRoleSelection = () => {
+    // Define role cards with their details
+    const roleCards = [
+      {
+        id: 'student',
+        title: 'Student',
+        description: 'Access learning materials, track progress, and communicate with teachers',
+        icon: (
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
           </svg>
-          Student
-        </button>
-        
-        <button
-          onClick={() => handleRoleSelect('teacher')}
-          className="w-full btn bg-green-500 hover:bg-green-600 text-white py-3 flex items-center justify-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        ),
+        color: 'from-blue-400 to-blue-600',
+        hoverColor: 'from-blue-500 to-blue-700',
+      },
+      {
+        id: 'teacher',
+        title: 'Teacher',
+        description: 'Create lesson plans, manage students, and track academic performance',
+        icon: (
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
           </svg>
-          Teacher
-        </button>
-        
-        <button
-          onClick={() => handleRoleSelect('hod')}
-          className="w-full btn bg-purple-500 hover:bg-purple-600 text-white py-3 flex items-center justify-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        ),
+        color: 'from-green-400 to-green-600',
+        hoverColor: 'from-green-500 to-green-700',
+      },
+      {
+        id: 'hod',
+        title: 'HOD',
+        description: 'Oversee department activities, manage teachers, and analyze performance',
+        icon: (
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
           </svg>
-          HOD
-        </button>
-        
-        <button
-          onClick={() => handleRoleSelect('admin')}
-          className="w-full btn bg-red-500 hover:bg-red-600 text-white py-3 flex items-center justify-center"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        ),
+        color: 'from-purple-400 to-purple-600',
+        hoverColor: 'from-purple-500 to-purple-700',
+      },
+      {
+        id: 'admin',
+        title: 'Admin',
+        description: 'Manage the entire platform, users, and system settings',
+        icon: (
+          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
           </svg>
-          Admin
-        </button>
+        ),
+        color: 'from-red-400 to-red-600',
+        hoverColor: 'from-red-500 to-red-700',
+      },
+    ];
+
+    return (
+      <div className="space-y-8 animate-fadeIn">
+        {/* Google account connected message */}
+        <div className="flex items-center justify-center space-x-2 bg-gray-50 py-3 px-4 rounded-lg border border-gray-200">
+          <svg className="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          <span className="text-sm text-gray-600">Google account connected</span>
+        </div>
+
+        <div className="text-center space-y-2">
+          <h3 className="text-2xl font-bold text-gray-800">Complete Your Profile</h3>
+          <p className="text-gray-600">
+            Please select your role to continue
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {roleCards.map((role, index) => (
+            <div 
+              key={role.id}
+              onClick={() => handleRoleSelect(role.id)}
+              className={`relative overflow-hidden rounded-xl shadow-lg cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-xl bg-gradient-to-br ${role.color} hover:${role.hoverColor}`}
+              style={{ animationDelay: `${index * 150}ms` }}
+            >
+              <div className="px-6 py-8 text-white flex flex-col items-center text-center h-full">
+                <div className="mb-4 p-3 bg-white/20 rounded-full">
+                  {role.icon}
+                </div>
+                <h3 className="text-xl font-bold mb-2">{role.title}</h3>
+                <p className="text-white/80 text-sm">{role.description}</p>
+              </div>
+              {/* Decorative elements */}
+              <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-white/10"></div>
+              <div className="absolute -top-6 -left-6 w-16 h-16 rounded-full bg-white/10"></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center text-sm text-gray-500 mt-6">
+          <p>Select the role that best describes your position at the institution</p>
+        </div>
       </div>
     );
   };
