@@ -563,7 +563,7 @@ const ProfileCompletion = () => {
         
         {selectedRole === 'teacher' && (
           <div className="mt-6 border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">Teacher Information</h3>
+            <h3 className="text-lg font-semibold mb-4 text-black">Teacher Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="subjectExpertise" className="block text-gray-700 font-medium mb-2">
@@ -730,7 +730,7 @@ const ProfileCompletion = () => {
         
         {selectedRole === 'admin' && (
           <div className="mt-6 border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">Admin Information</h3>
+            <h3 className="text-lg font-semibold mb-4 text-black">Admin Information</h3>
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label htmlFor="adminAccessLevel" className="block text-gray-700 font-medium mb-2">
@@ -909,7 +909,7 @@ const ProfileCompletion = () => {
   };
   
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+    <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
           <div className="px-4 py-5 sm:p-6">
