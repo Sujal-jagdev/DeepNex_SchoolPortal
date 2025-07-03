@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://edunex.deepnex.in/api/auth';
+const API_URL = 'https://api.edunex.deepnex.in/api/auth';
 
 const authApi = axios.create({
   baseURL: API_URL,
