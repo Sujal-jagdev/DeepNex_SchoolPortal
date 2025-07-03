@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signIn, signInWithGoogle, resetPassword, checkUserRole } from '../services/supabaseClient';
 import logo2 from '../assets/logo2.png';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Login = ({ onLogin }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState('');
   const [animateForm, setAnimateForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Add animation effect when component mounts
   useEffect(() => {
@@ -221,13 +223,23 @@ const Login = ({ onLogin }) => {
                       </svg>
                     </div>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       id="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-black"
+                      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 text-black"
                       placeholder="Enter your password"
                     />
+                    <div 
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <FaEyeSlash className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <FaEye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </div>
                   </div>
                 </div>
                 

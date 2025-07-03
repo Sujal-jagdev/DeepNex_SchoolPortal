@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { signUp, insertUserData, verifySecurityPin, checkEmailExists } from '../services/supabaseClient';
 import logo2 from '../assets/logo2.png';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -22,6 +23,8 @@ const Signup = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phonenumber, setPhonenumber] = useState('');
   const [gender, setGender] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Student specific fields
   const [rollNo, setRollNo] = useState('');
@@ -385,7 +388,7 @@ const Signup = () => {
                 Password *
               </label>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -393,10 +396,15 @@ const Signup = () => {
                 placeholder="Create a password"
                 required
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pt-6">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+              <div 
+                className="absolute inset-y-0 right-0 flex items-center pr-3 pt-6 cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <FaEyeSlash className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <FaEye className="h-5 w-5 text-gray-400" />
+                )}
               </div>
             </div>
             
@@ -405,7 +413,7 @@ const Signup = () => {
                 Confirm Password *
               </label>
               <input
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -413,10 +421,15 @@ const Signup = () => {
                 placeholder="Confirm your password"
                 required
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pt-6">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+              <div 
+                className="absolute inset-y-0 right-0 flex items-center pr-3 pt-6 cursor-pointer"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <FaEyeSlash className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <FaEye className="h-5 w-5 text-gray-400" />
+                )}
               </div>
             </div>
             
@@ -428,9 +441,17 @@ const Signup = () => {
                 type="tel"
                 id="phonenumber"
                 value={phonenumber}
-                onChange={(e) => setPhonenumber(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Only allow numbers and limit to 10 digits
+                  if (value === '' || (/^\d+$/.test(value) && value.length <= 10)) {
+                    setPhonenumber(value);
+                  }
+                }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-sm text-black"
                 placeholder="Enter your phone number"
+                maxLength="10"
+                pattern="[0-9]{10}"
                 required
               />
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pt-6">
@@ -566,9 +587,17 @@ const Signup = () => {
                   type="tel"
                   id="parentsNum"
                   value={parentsNum}
-                  onChange={(e) => setParentsNum(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Only allow numbers and limit to 10 digits
+                    if (value === '' || (/^\d+$/.test(value) && value.length <= 10)) {
+                      setParentsNum(value);
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 shadow-sm text-black"
                   placeholder="Enter parent's phone number"
+                  maxLength="10"
+                  pattern="[0-9]{10}"
                   required
                 />
               </div>
