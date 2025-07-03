@@ -938,11 +938,11 @@ const Signup = () => {
         <div className="absolute top-1/3 left-1/4 bg-gradient-to-tr from-pink-200 opacity-20 rounded-full w-72 h-72 filter blur-xl animate-pulse delay-1000"></div>
       </div>
       
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative z-10 pt-8">
         <div className={`max-w-2xl mx-auto bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden transform transition-all duration-500 ease-in-out ${animateForm ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-6">
             <div className="flex flex-col items-center justify-center">
-              <img src={logo2} alt="EduNex Logo" className="h-16 w-auto mb-4" />
+              <img src={logo2} alt="EduNex Logo" className="h-16 w-auto" />
               <h2 className="text-2xl font-bold text-center text-white font-display">
                 {!selectedRole ? 'Sign Up for ' : `Register as ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)} on `}
                 <span className="text-bright-green">EduNex</span>

@@ -10,7 +10,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: window.localStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    // Set session expiry to 21 days (in seconds)
+    cookieOptions: {
+      maxAge: 21 * 24 * 60 * 60 // 21 days in seconds
+    }
   }
 });
 
@@ -24,9 +28,13 @@ export const signUp = async (email, password) => {
 };
 
 export const signIn = async (email, password) => {
+  // Set session expiry to 21 days
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
+    options: {
+      expiresIn: 60 * 60 * 24 * 21 // 21 days in seconds
+    }
   });
   return { data, error };
 };

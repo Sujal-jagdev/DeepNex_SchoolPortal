@@ -154,18 +154,18 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen py-12 flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 text-black">
+    <div className="min-h-screen py-12 flex items-center justify-center bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 text-black pt-20">
       <div className="w-full max-w-md px-4">
         <div 
           className={`bg-white rounded-2xl shadow-2xl overflow-hidden transform transition-all duration-500 ${animateForm ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
         > 
-          <div className="bg-gradient-to-r from-primary to-indigo-600 py-6 px-6 relative">
+          <div className="bg-gradient-to-r from-primary to-indigo-600 py-4 px-4 relative">
             <div className="absolute top-0 left-0 w-full h-full opacity-20">
               {/* Abstract pattern overlay */}
               <div className="absolute inset-0 bg-pattern-dots"></div>
             </div>
             <div className="flex flex-col items-center justify-center relative z-10">
-              <img src={logo2} alt="EduNex Logo" className="h-16 w-auto mb-4" />
+              <img src={logo2} alt="EduNex Logo" className="h-16 w-auto" />
               <h2 className="text-2xl font-bold text-center text-white font-display">
                 Welcome to <span className="text-bright-green">EduNex</span>
               </h2>
@@ -175,7 +175,7 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
           
-          <div className="p-8">
+          <div className="p-6">
             {!showForgotPassword ? (
               // Login Form
               <form onSubmit={handleSubmit} className="space-y-6">

@@ -1,9 +1,19 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaTwitter, FaFacebook, FaInstagram, FaLinkedin } from 'react-icons/fa';
 import logo2 from '../../assets/logo2.png';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const location = useLocation();
+  
+  // Hide footer on login, signup, reset password, and forgot password pages
+  const hideFooterPaths = ["/login", "/signup", "/reset-password", "/forgot-password"];
+  const shouldHideFooter = hideFooterPaths.includes(location.pathname);
+
+  // Don't render footer on specified pages
+  if (shouldHideFooter) {
+    return null;
+  }
 
   return (
     <footer className="bg-primary text-white py-12">
