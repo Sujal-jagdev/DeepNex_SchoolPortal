@@ -58,7 +58,7 @@ const TeacherAssistant = () => {
         return;
       }
       
-      const response = await axios.get(`https://edunex.deepnex.in/api/chat/teacher/history?userId=${userId}`);
+      const response = await axios.get(`https://api.edunex.deepnex.in/api/chat/teacher/history?userId=${userId}`);
       
       if (response.data.success && response.data.sessions) {
         setChatSessions(response.data.sessions);
@@ -74,7 +74,7 @@ const TeacherAssistant = () => {
   const loadChatHistory = async (sessionId) => {
     try {
       setIsTyping(true);
-      const response = await axios.get(`https://edunex.deepnex.in/api/chat/teacher/history?sessionId=${sessionId}`);
+      const response = await axios.get(`https://api.edunex.deepnex.in/api/chat/teacher/history?sessionId=${sessionId}`);
       
       if (response.data.success && response.data.history) {
         // Convert the chat history to our message format
@@ -125,7 +125,7 @@ const TeacherAssistant = () => {
       const userId = localStorage.getItem('userId');
       
       // Call backend API with userId and sessionId if available
-      const response = await axios.post('https://edunex.deepnex.in/api/chat/teacher', {
+      const response = await axios.post('https://api.edunex.deepnex.in/api/chat/teacher', {
         message: newMessage,
         userId: userId,
         sessionId: currentSessionId
